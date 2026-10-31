@@ -1,4 +1,4 @@
-package com.example.SecureLoginPUC.service;
+package com.example.rentcar.service;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.springframework.stereotype.Service;
 
-import com.example.SecureLoginPUC.config.UserConfig;
+import com.example.rentcar.config.UserConfig;
 
 @Service
 public class RecaptchaService {

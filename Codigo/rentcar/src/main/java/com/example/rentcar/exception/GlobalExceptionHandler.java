@@ -1,4 +1,4 @@
-package com.example.SecureLoginPUC.exception;
+package com.example.rentcar.exception;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;

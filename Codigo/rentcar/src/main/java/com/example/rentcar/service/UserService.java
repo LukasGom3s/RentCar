@@ -1,153 +1,64 @@
-package com.example.SecureLoginPUC.service;
+package com.example.rentcar.service;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.example.rentcar.models.Cliente;
+import com.example.rentcar.models.Usuario;
+import com.example.rentcar.repository.UsuarioRepository;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.stereotype.Service;
 
-import com.example.SecureLoginPUC.config.UserConfig;
-
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
 
-    private final InMemoryUserDetailsManager userDetailsManager;
+    private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /*
-     * ============================================================
-     * NOMES DOS USUÁRIOS
-     * ============================================================
-     *
-     * Guarda o nome associado ao e-mail/usuário.
-     *
-     * Exemplo:
-     *
-     * joao -> João Paulo
-     * admin -> Administrador
-     * joao@gmail.com -> João Paulo
-     *
-     */
-
-    private final Map<String, String> userNames = new HashMap<>();
-
-    /*
-     * ============================================================
-     * CONSTRUTOR
-     * ============================================================
-     */
-
-    public UserService(
-            InMemoryUserDetailsManager userDetailsManager,
-            PasswordEncoder passwordEncoder,
-            UserConfig userConfig) {
-
-        this.userDetailsManager = userDetailsManager;
+    public UserService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+        this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
-
-        /*
-         * Registra os nomes dos usuários pré-configurados.
-         */
-        userNames.put(
-                userConfig.getUserUsername(),
-                userConfig.getUserName());
-
-        userNames.put(
-                userConfig.getAdminUsername(),
-                userConfig.getAdminName());
     }
 
-    /*
-     * ============================================================
-     * CRIAR USUÁRIO
-     * ============================================================
-     */
+    // 1. Método obrigatório do Spring Security para buscar o usuário no login
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Usuario usuario = usuarioRepository.findByLogin(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
 
-    public void createUser(
-            String email,
-            String senha,
-            String nome) {
-
-        /*
-         * Cria o usuário do Spring Security.
-         */
-        UserDetails user = User.builder()
-                .username(email)
-                .password(
-                        passwordEncoder.encode(senha))
-                .roles("USER")
+        return User.builder()
+                .username(usuario.getLogin())
+                .password(usuario.getPalavraPasse())
+                .roles("USER") // O ideal futuramente é separar ROLE_CLIENTE e ROLE_AGENTE
                 .build();
-
-        /*
-         * Salva o usuário em memória.
-         */
-        userDetailsManager.createUser(user);
-
-        /*
-         * Salva o nome associado ao e-mail.
-         */
-        userNames.put(
-                email,
-                nome);
     }
 
-    /*
-     * ============================================================
-     * VERIFICAR SE USUÁRIO EXISTE
-     * ============================================================
-     */
+    // 2. Criar um novo Cliente (salvando no Supabase)
+    public void createUser(String email, String senha, String nome) {
+        if (exists(email)) {
+            throw new IllegalArgumentException("Email já cadastrado.");
+        }
 
+        Cliente novoCliente = new Cliente();
+        novoCliente.setLogin(email);
+        novoCliente.setPalavraPasse(passwordEncoder.encode(senha));
+        novoCliente.setNome(nome);
+        
+        usuarioRepository.save(novoCliente);
+    }
+
+    // 3. Verificar se existe
     public boolean exists(String email) {
-
-        return userDetailsManager.userExists(email);
+        return usuarioRepository.findByLogin(email).isPresent();
     }
 
-    /*
-     * ============================================================
-     * BUSCAR NOME DO USUÁRIO
-     * ============================================================
-     */
+    // 4. Atualizar Senha
+    public void updatePassword(String email, String novaSenha) {
+        Usuario usuario = usuarioRepository.findByLogin(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
 
-    public String getName(String email) {
-
-        return userNames.get(email);
-    }
-
-    /*
-     * ============================================================
-     * ATUALIZAR SENHA
-     * ============================================================
-     */
-
-    public void updatePassword(
-            String email,
-            String novaSenha) {
-
-        /*
-         * Busca o usuário atual.
-         */
-        UserDetails usuarioAtual = userDetailsManager.loadUserByUsername(email);
-
-        /*
-         * Cria uma nova versão do usuário
-         * mantendo as permissões atuais.
-         */
-        UserDetails usuarioAtualizado = User.builder()
-                .username(
-                        usuarioAtual.getUsername())
-                .password(
-                        passwordEncoder.encode(novaSenha))
-                .authorities(
-                        usuarioAtual.getAuthorities())
-                .build();
-
-        /*
-         * Atualiza o usuário no armazenamento em memória.
-         */
-        userDetailsManager.updateUser(
-                usuarioAtualizado);
+        usuario.setPalavraPasse(passwordEncoder.encode(novaSenha));
+        usuarioRepository.save(usuario);
     }
 }
