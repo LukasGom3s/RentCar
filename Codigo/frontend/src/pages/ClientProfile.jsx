@@ -165,6 +165,9 @@ export default function ClientProfile() {
                     <ProfileField label="E-mail" value={profile.email} />
                   </dl>
                   <div className="client-profile__actions">
+                    <Link to="/dashboard" className="auth-submit auth-submit--secondary auth-home__link">
+                      Voltar à dashboard
+                    </Link>
                     <button className="auth-submit" type="button" onClick={() => setEditando(true)}>
                       Editar perfil
                     </button>

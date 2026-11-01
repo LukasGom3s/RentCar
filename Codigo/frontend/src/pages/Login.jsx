@@ -32,11 +32,8 @@ export default function Login() {
 
     setEnviando(true);
     try {
-      const data = await submitAuthRequest('login', formData, captchaToken);
-      navigate('/cliente', {
-        replace: true,
-        state: { message: data.mensagem || 'Login efetuado com sucesso.' },
-      });
+      await submitAuthRequest('login', formData, captchaToken);
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       setErro(error.message);
       setCaptchaToken('');

@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+import API_URL from './api';
 
 async function readResponse(response) {
   if (response.status === 204) {
@@ -7,7 +7,11 @@ async function readResponse(response) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.message || data.erro || data.detail || 'Não foi possível concluir a operação.');
+    const error = new Error(
+      data.message || data.erro || data.detail || 'Não foi possível concluir a operação.',
+    );
+    error.status = response.status;
+    throw error;
   }
 
   return data;

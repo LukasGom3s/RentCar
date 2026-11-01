@@ -6,6 +6,8 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ClientProfile from "./pages/ClientProfile";
+import Orders from "./pages/Orders";
+import CustomerDashboard from "./pages/CustomerDashboard";
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/resetpassword" element={<ResetPassword />} />
         <Route path="/cliente" element={<ClientProfile />} />
+        <Route path="/pedidos" element={<Orders />} />
+        <Route path="/dashboard" element={<CustomerDashboard />} />
       </Routes>
     </Router>
   );

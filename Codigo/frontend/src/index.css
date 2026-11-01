@@ -357,6 +357,233 @@ a {
   font-size: 16px;
 }
 
+.orders-card {
+  align-self: flex-start;
+}
+
+.orders-card .auth-content {
+  align-items: flex-start;
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.orders-card .auth-title {
+  margin-bottom: 12px;
+}
+
+.orders-card .auth-home__description {
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+.orders-form,
+.orders-form label,
+.orders-form__dates {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.orders-form label {
+  color: #52677d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.orders-form .auth-input {
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.orders-form .auth-submit {
+  min-height: 50px;
+  margin-top: 2px;
+  font-size: 16px;
+}
+
+.orders-list {
+  margin-top: 30px;
+}
+
+.orders-list__title {
+  margin: 0 0 14px;
+  color: #24577f;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.orders-list__empty {
+  color: #718198;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.order-item {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #e1e7ec;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.order-item__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.order-item__heading h3 {
+  margin: 0;
+  color: #253f57;
+  font-size: 16px;
+}
+
+.order-item p {
+  margin: 4px 0;
+  color: #52677d;
+  font-size: 14px;
+}
+
+.order-item small {
+  display: block;
+  margin-top: 8px;
+  color: #91a1b7;
+  font-size: 12px;
+}
+
+.order-status {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #fff5d6;
+  color: #825d00;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.order-status--aprovado {
+  background: #e5f5ec;
+  color: #18764b;
+}
+
+.order-status--rejeitado,
+.order-status--cancelado {
+  background: #fcebea;
+  color: #a83232;
+}
+
+.order-status--pendente {
+  background: #e8effa;
+  color: #24577f;
+}
+
+.orders-card .auth-footer {
+  margin-top: 18px;
+  font-size: 15px;
+}
+
+.dashboard-card {
+  align-self: flex-start;
+}
+
+.dashboard-card .auth-content {
+  align-items: flex-start;
+  padding-top: 42px;
+  padding-bottom: 36px;
+}
+
+.dashboard-card .auth-title {
+  margin-bottom: 10px;
+}
+
+.dashboard-card .auth-home__description {
+  margin-bottom: 22px;
+  font-size: 15px;
+}
+
+.dashboard-content .auth-success--inline {
+  margin: 0 0 16px;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.dashboard-stat {
+  display: flex;
+  min-height: 92px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid #e1e7ec;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.dashboard-stat__value {
+  color: #24577f;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.dashboard-stat__label {
+  color: #718198;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dashboard-actions .auth-submit {
+  min-height: 50px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.dashboard-orders {
+  margin-top: 28px;
+}
+
+.dashboard-orders__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dashboard-orders__heading a {
+  color: #24577f;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard-orders__heading a:hover {
+  text-decoration: underline;
+}
+
+.dashboard-orders .order-item:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-footer {
+  margin-top: 22px;
+  font-size: 14px;
+}
+
 .auth-home__title {
   margin-bottom: 12px;
 }
@@ -511,6 +738,31 @@ a {
 
   .auth-card--register .auth-content {
     padding-top: 28px;
+  }
+
+  .orders-card .auth-content {
+    padding-top: 28px;
+  }
+
+  .dashboard-card .auth-content {
+    padding-top: 28px;
+  }
+
+  .dashboard-stats {
+    gap: 7px;
+  }
+
+  .dashboard-stat {
+    min-height: 82px;
+    padding: 10px;
+  }
+
+  .dashboard-stat__value {
+    font-size: 22px;
+  }
+
+  .dashboard-stat__label {
+    font-size: 11px;
   }
 
   .auth-card--register .auth-title {
