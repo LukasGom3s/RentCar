@@ -35,7 +35,14 @@ public class UserService implements UserDetailsService {
     }
 
     // 2. Criar um novo Cliente (salvando no Supabase)
-    public void createUser(String email, String senha, String nome) {
+    public void createUser(
+            String email,
+            String senha,
+            String nome,
+            String rg,
+            String cpf,
+            String morada,
+            String profissao) {
         if (exists(email)) {
             throw new IllegalArgumentException("Email já cadastrado.");
         }
@@ -44,6 +51,10 @@ public class UserService implements UserDetailsService {
         novoCliente.setLogin(email);
         novoCliente.setPalavraPasse(passwordEncoder.encode(senha));
         novoCliente.setNome(nome);
+        novoCliente.setRg(rg);
+        novoCliente.setCpf(cpf);
+        novoCliente.setMorada(morada);
+        novoCliente.setProfissao(profissao);
         
         usuarioRepository.save(novoCliente);
     }

@@ -6,8 +6,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.rentcar.config.UserConfig;
 import com.example.rentcar.service.PasswordRecoveryService;
 import com.example.rentcar.service.SendEmailService;
 import com.example.rentcar.service.UserService;
@@ -15,33 +19,49 @@ import com.example.rentcar.service.UserService;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 @RestController
 @RequestMapping("/api/auth")
-// Opcional: Adicionar @CrossOrigin("http://localhost:5173") quando o React estiver a correr
 public class SecureLoginController {
 
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final PasswordRecoveryService passwordRecoveryService;
     private final SendEmailService sendEmailService;
+    private final SecurityContextRepository securityContextRepository;
+    private final UserConfig userConfig;
 
     public SecureLoginController(
             AuthenticationManager authenticationManager,
             UserService userService,
             PasswordRecoveryService passwordRecoveryService,
-            SendEmailService sendEmailService) {
+            SendEmailService sendEmailService,
+            SecurityContextRepository securityContextRepository,
+            UserConfig userConfig) {
         this.authenticationManager = authenticationManager;
         this.userService = userService;
         this.passwordRecoveryService = passwordRecoveryService;
         this.sendEmailService = sendEmailService;
+        this.securityContextRepository = securityContextRepository;
+        this.userConfig = userConfig;
     }
 
     // =========================================================
     // LOGIN
     // =========================================================
 
+    @GetMapping("/recaptcha-site-key")
+    public Map<String, String> recaptchaSiteKey() {
+        return Map.of("siteKey", userConfig.getRecaptchaSiteKey());
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<?> login(
+            @RequestBody Map<String, String> credentials,
+            HttpServletRequest request,
+            HttpServletResponse response) {
         try {
             Authentication auth = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -49,13 +69,18 @@ public class SecureLoginController {
                             credentials.get("senha")
                     )
             );
-            
-            Map<String, String> response = new HashMap<>();
-            response.put("mensagem", "Login efetuado com sucesso!");
-            response.put("usuario", auth.getName());
-            
-            return ResponseEntity.ok(response);
-            
+
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(auth);
+            SecurityContextHolder.setContext(context);
+            securityContextRepository.saveContext(context, request, response);
+
+            Map<String, String> responseBody = new HashMap<>();
+            responseBody.put("mensagem", "Login efetuado com sucesso!");
+            responseBody.put("usuario", auth.getName());
+
+            return ResponseEntity.ok().body(responseBody);
+
         } catch (AuthenticationException e) {
             Map<String, String> error = new HashMap<>();
             error.put("erro", "Credenciais inválidas");
@@ -70,7 +95,19 @@ public class SecureLoginController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> dadosCadastro) {
         String email = dadosCadastro.get("email");
-        
+
+        if (isBlank(email)
+                || isBlank(dadosCadastro.get("senha"))
+                || isBlank(dadosCadastro.get("nome"))
+                || isBlank(dadosCadastro.get("rg"))
+                || isBlank(dadosCadastro.get("cpf"))
+                || isBlank(dadosCadastro.get("morada"))
+                || isBlank(dadosCadastro.get("profissao"))) {
+            Map<String, String> error = new HashMap<>();
+            error.put("erro", "Preencha todos os campos obrigatórios.");
+            return ResponseEntity.badRequest().body(error);
+        }
+
         if (userService.exists(email)) {
             Map<String, String> error = new HashMap<>();
             error.put("erro", "E-mail já registado.");
@@ -80,12 +117,20 @@ public class SecureLoginController {
         userService.createUser(
                 email,
                 dadosCadastro.get("senha"),
-                dadosCadastro.get("nome")
+                dadosCadastro.get("nome"),
+                dadosCadastro.get("rg"),
+                dadosCadastro.get("cpf"),
+                dadosCadastro.get("morada"),
+                dadosCadastro.get("profissao")
         );
 
         Map<String, String> response = new HashMap<>();
         response.put("mensagem", "Utilizador registado com sucesso!");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     // =========================================================
