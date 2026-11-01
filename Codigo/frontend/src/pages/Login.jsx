@@ -33,7 +33,7 @@ export default function Login() {
     setEnviando(true);
     try {
       const data = await submitAuthRequest('login', formData, captchaToken);
-      navigate('/', {
+      navigate('/cliente', {
         replace: true,
         state: { message: data.mensagem || 'Login efetuado com sucesso.' },
       });

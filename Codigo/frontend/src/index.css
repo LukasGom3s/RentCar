@@ -291,6 +291,72 @@ a {
   background: #f3f6f9;
 }
 
+.auth-submit--danger {
+  background: #a83232;
+}
+
+.auth-submit--danger:hover {
+  background: #852727;
+}
+
+.client-profile__details {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.client-profile__field {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8edf2;
+}
+
+.client-profile__field dt {
+  margin-bottom: 4px;
+  color: #718198;
+  font-size: 13px;
+}
+
+.client-profile__field dd {
+  margin: 0;
+  color: #253f57;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.client-profile-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #52677d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.client-profile-form .auth-input {
+  min-height: 48px;
+  padding: 0 17px;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.client-profile-form .auth-input[readonly] {
+  background: #f3f6f9;
+  color: #718198;
+}
+
+.client-profile__actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.client-profile__actions .auth-submit {
+  min-height: 50px;
+  margin-top: 0;
+  font-size: 16px;
+}
+
 .auth-home__title {
   margin-bottom: 12px;
 }
