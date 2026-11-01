@@ -7,14 +7,17 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.example.rentcar.models.Cliente;
 import com.example.rentcar.repository.ClienteRepository;
+import com.example.rentcar.repository.PedidoRepository;
 
 @Service
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final PedidoRepository pedidoRepository;
 
-    public ClienteService(ClienteRepository clienteRepository) {
+    public ClienteService(ClienteRepository clienteRepository, PedidoRepository pedidoRepository) {
         this.clienteRepository = clienteRepository;
+        this.pedidoRepository = pedidoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +65,11 @@ public class ClienteService {
 
     @Transactional
     public void delete(String login) {
+        if (pedidoRepository.existsByCliente_Login(login)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Não é possível excluir a conta enquanto houver pedidos de aluguel registrados.");
+        }
         Cliente cliente = getByLogin(login);
         clienteRepository.delete(cliente);
     }

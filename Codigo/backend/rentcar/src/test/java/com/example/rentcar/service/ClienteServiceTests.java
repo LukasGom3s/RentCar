@@ -15,12 +15,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.example.rentcar.models.Cliente;
 import com.example.rentcar.repository.ClienteRepository;
+import com.example.rentcar.repository.PedidoRepository;
 
 class ClienteServiceTests {
 
     @Test
     void updatesOnlyProfileFieldsForAuthenticatedLogin() {
         ClienteRepository repository = mock(ClienteRepository.class);
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
         Cliente existing = new Cliente();
         existing.setLogin("cliente@example.com");
         existing.setNome("Nome antigo");
@@ -28,7 +30,7 @@ class ClienteServiceTests {
         existing.setRg("RG1");
         when(repository.findByLogin("cliente@example.com")).thenReturn(Optional.of(existing));
         when(repository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        ClienteService service = new ClienteService(repository);
+        ClienteService service = new ClienteService(repository, pedidoRepository);
 
         Cliente updated = service.update(
                 "cliente@example.com",
@@ -49,7 +51,8 @@ class ClienteServiceTests {
     @Test
     void rejectsInvalidCpfWithoutLoadingClient() {
         ClienteRepository repository = mock(ClienteRepository.class);
-        ClienteService service = new ClienteService(repository);
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        ClienteService service = new ClienteService(repository, pedidoRepository);
 
         assertThrows(ResponseStatusException.class, () -> service.update(
                 "cliente@example.com",
@@ -65,10 +68,11 @@ class ClienteServiceTests {
     @Test
     void deletesTheClientResolvedFromAuthenticatedLogin() {
         ClienteRepository repository = mock(ClienteRepository.class);
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
         Cliente cliente = new Cliente();
         cliente.setLogin("cliente@example.com");
         when(repository.findByLogin("cliente@example.com")).thenReturn(Optional.of(cliente));
-        ClienteService service = new ClienteService(repository);
+        ClienteService service = new ClienteService(repository, pedidoRepository);
 
         service.delete("cliente@example.com");
 

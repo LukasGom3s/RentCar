@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Rotas públicas da nossa nova API
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/automoveis").permitAll()
                 // Tudo o resto exige autenticação
                 .anyRequest().authenticated()
             )
