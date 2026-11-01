@@ -162,6 +162,68 @@ a {
   box-shadow: 0 0 0 3px rgb(43 98 142 / 13%);
 }
 
+.auth-input[aria-invalid='true'] {
+  border-color: #c62828;
+}
+
+.auth-input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px rgb(198 40 40 / 12%);
+}
+
+.auth-field-error {
+  margin-top: -8px;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.auth-field-help {
+  margin-top: -8px;
+  color: #718198;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.auth-password-field {
+  position: relative;
+}
+
+.auth-password-field .auth-input {
+  padding-right: 56px;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #718198;
+  cursor: pointer;
+}
+
+.auth-password-toggle:hover {
+  background: #f3f6f9;
+  color: #24577f;
+}
+
+.auth-password-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .auth-captcha {
   display: flex;
   min-height: 78px;

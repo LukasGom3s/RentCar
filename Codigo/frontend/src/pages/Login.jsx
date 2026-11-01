@@ -60,7 +60,6 @@ export default function Login() {
             {location.state?.message && (
               <p className="auth-success" role="status">{location.state.message}</p>
             )}
-            {erro && <p className="auth-error" role="alert">{erro}</p>}
 
             <form className="auth-form" onSubmit={handleLogin}>
               <label className="visually-hidden" htmlFor="login-email">E-mail</label>
@@ -87,6 +86,7 @@ export default function Login() {
                 autoComplete="current-password"
                 required
               />
+              {erro && <p className="auth-error" role="alert">{erro}</p>}
               <RecaptchaWidget key={captchaVersion} onChange={handleCaptchaChange} />
               <button className="auth-submit" type="submit" disabled={enviando}>
                 {enviando ? 'Entrando...' : 'Entrar'}
@@ -98,7 +98,7 @@ export default function Login() {
               <span className="auth-footer__links">
                 <Link to="/register">Cadastre-se</Link>
                 <span className="auth-footer__separator" aria-hidden="true">|</span>
-                <span className="auth-footer__recovery">Esqueceu sua senha?</span>
+                <Link to="/forgot-password">Esqueceu sua senha?</Link>
               </span>
             </p>
           </div>

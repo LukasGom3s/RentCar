@@ -12,12 +12,16 @@ export default function Register() {
     rg: '',
     morada: '',
     profissao: '',
-    senha: ''
+    senha: '',
+    confirmarSenha: ''
   });
   const [erro, setErro] = useState('');
+  const [errosCampos, setErrosCampos] = useState({});
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaVersion, setCaptchaVersion] = useState(0);
   const [enviando, setEnviando] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const navigate = useNavigate();
 
   const handleCaptchaChange = useCallback((token) => {
@@ -25,12 +29,62 @@ export default function Register() {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const sanitizedValue = name === 'cpf'
+      ? value.replace(/\D/g, '')
+      : name === 'rg'
+        ? value.replace(/[^a-zA-Z0-9]/g, '')
+        : value;
+
+    setFormData({ ...formData, [name]: sanitizedValue });
+    setErrosCampos((errosAtuais) => {
+      if (!errosAtuais[name] && !(name === 'confirmarSenha' && errosAtuais.senha)) {
+        return errosAtuais;
+      }
+
+      const novosErros = { ...errosAtuais };
+      delete novosErros[name];
+      if (name === 'senha' || name === 'confirmarSenha') {
+        delete novosErros.senha;
+        delete novosErros.confirmarSenha;
+      }
+      return novosErros;
+    });
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setErro('');
+
+    const novosErros = {};
+    const camposObrigatorios = ['nome', 'cpf', 'rg', 'morada', 'profissao', 'email', 'senha', 'confirmarSenha'];
+
+    camposObrigatorios.forEach((campo) => {
+      if (!formData[campo].trim()) {
+        novosErros[campo] = 'Este campo é obrigatório.';
+      }
+    });
+
+    if (formData.cpf && !/^\d+$/.test(formData.cpf)) {
+      novosErros.cpf = 'O CPF deve conter somente números.';
+    }
+
+    if (formData.rg && !/^[a-zA-Z0-9]+$/.test(formData.rg)) {
+      novosErros.rg = 'O RG deve conter somente letras e números.';
+    }
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      novosErros.email = 'Informe um e-mail válido.';
+    }
+
+    if (formData.senha && formData.confirmarSenha && formData.senha !== formData.confirmarSenha) {
+      novosErros.confirmarSenha = 'As senhas não coincidem.';
+    }
+
+    setErrosCampos(novosErros);
+    if (Object.keys(novosErros).length > 0) {
+      return;
+    }
 
     if (!captchaToken) {
       setErro('Confirme o reCAPTCHA para continuar.');
@@ -65,9 +119,7 @@ export default function Register() {
             <span className="auth-eyebrow">RENT CAR</span>
             <h1 className="auth-title auth-title--register">Crie sua conta</h1>
 
-            {erro && <p className="auth-error" role="alert">{erro}</p>}
-
-            <form onSubmit={handleRegister} className="auth-form">
+            <form onSubmit={handleRegister} className="auth-form" noValidate>
               <input
                 type="text"
                 name="nome"
@@ -78,7 +130,10 @@ export default function Register() {
                 required
                 autoComplete="name"
                 className="auth-input"
+                aria-invalid={Boolean(errosCampos.nome)}
+                aria-describedby={errosCampos.nome ? 'nome-error' : undefined}
               />
+              {errosCampos.nome && <small className="auth-field-error" id="nome-error">{errosCampos.nome}</small>}
               <input
                 type="text"
                 name="cpf"
@@ -87,8 +142,13 @@ export default function Register() {
                 value={formData.cpf}
                 onChange={handleChange}
                 required
+                inputMode="numeric"
+                autoComplete="off"
                 className="auth-input"
+                aria-invalid={Boolean(errosCampos.cpf)}
+                aria-describedby={errosCampos.cpf ? 'cpf-error' : undefined}
               />
+              {errosCampos.cpf && <small className="auth-field-error" id="cpf-error">{errosCampos.cpf}</small>}
               <input
                 type="text"
                 name="rg"
@@ -97,8 +157,12 @@ export default function Register() {
                 value={formData.rg}
                 onChange={handleChange}
                 required
+                autoComplete="off"
                 className="auth-input"
+                aria-invalid={Boolean(errosCampos.rg)}
+                aria-describedby={errosCampos.rg ? 'rg-error' : undefined}
               />
+              {errosCampos.rg && <small className="auth-field-error" id="rg-error">{errosCampos.rg}</small>}
               <input
                 type="text"
                 name="morada"
@@ -109,7 +173,10 @@ export default function Register() {
                 required
                 autoComplete="street-address"
                 className="auth-input"
+                aria-invalid={Boolean(errosCampos.morada)}
+                aria-describedby={errosCampos.morada ? 'morada-error' : undefined}
               />
+              {errosCampos.morada && <small className="auth-field-error" id="morada-error">{errosCampos.morada}</small>}
               <input
                 type="text"
                 name="profissao"
@@ -119,7 +186,10 @@ export default function Register() {
                 onChange={handleChange}
                 required
                 className="auth-input"
+                aria-invalid={Boolean(errosCampos.profissao)}
+                aria-describedby={errosCampos.profissao ? 'profissao-error' : undefined}
               />
+              {errosCampos.profissao && <small className="auth-field-error" id="profissao-error">{errosCampos.profissao}</small>}
               <input
                 type="email"
                 name="email"
@@ -130,19 +200,64 @@ export default function Register() {
                 required
                 autoComplete="email"
                 className="auth-input"
+                aria-invalid={Boolean(errosCampos.email)}
+                aria-describedby={errosCampos.email ? 'email-error' : undefined}
               />
-              <input
-                type="password"
-                name="senha"
-                placeholder="Senha"
-                aria-label="Senha"
-                value={formData.senha}
-                onChange={handleChange}
-                required
-                autoComplete="new-password"
-                className="auth-input"
-              />
+              {errosCampos.email && <small className="auth-field-error" id="email-error">{errosCampos.email}</small>}
+              <div className="auth-password-field">
+                <input
+                  type={mostrarSenha ? 'text' : 'password'}
+                  name="senha"
+                  placeholder="Senha"
+                  aria-label="Senha"
+                  value={formData.senha}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                  className="auth-input"
+                  aria-invalid={Boolean(errosCampos.senha)}
+                  aria-describedby={errosCampos.senha ? 'senha-error' : undefined}
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setMostrarSenha((mostrar) => !mostrar)}
+                  aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  aria-pressed={mostrarSenha}
+                >
+                  {mostrarSenha ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+              {errosCampos.senha && <small className="auth-field-error" id="senha-error">{errosCampos.senha}</small>}
+              <div className="auth-password-field">
+                <input
+                  type={mostrarConfirmacao ? 'text' : 'password'}
+                  name="confirmarSenha"
+                  placeholder="Confirme a senha"
+                  aria-label="Confirme a senha"
+                  value={formData.confirmarSenha}
+                  onChange={handleChange}
+                  required
+                  autoComplete="new-password"
+                  className="auth-input"
+                  aria-invalid={Boolean(errosCampos.confirmarSenha)}
+                  aria-describedby={errosCampos.confirmarSenha ? 'confirmar-senha-error' : undefined}
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setMostrarConfirmacao((mostrar) => !mostrar)}
+                  aria-label={mostrarConfirmacao ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'}
+                  aria-pressed={mostrarConfirmacao}
+                >
+                  {mostrarConfirmacao ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+              {errosCampos.confirmarSenha && (
+                <small className="auth-field-error" id="confirmar-senha-error">{errosCampos.confirmarSenha}</small>
+              )}
 
+              {erro && <p className="auth-error" role="alert">{erro}</p>}
               <RecaptchaWidget key={captchaVersion} onChange={handleCaptchaChange} />
               <button type="submit" className="auth-submit" disabled={enviando}>
                 {enviando ? 'Cadastrando...' : 'Registrar'}
@@ -156,5 +271,23 @@ export default function Register() {
         </div>
       </section>
     </main>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+      <path d="M9.9 5.2A9.8 9.8 0 0 1 12 5c6.4 0 10 7 10 7a14.6 14.6 0 0 1-3.2 4.1M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a9.8 9.8 0 0 0 4.1-.9" />
+    </svg>
   );
 }

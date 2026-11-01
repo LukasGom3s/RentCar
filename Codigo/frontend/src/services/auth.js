@@ -22,13 +22,18 @@ export async function getRecaptchaSiteKey() {
 }
 
 export async function submitAuthRequest(endpoint, payload, captchaToken) {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  if (captchaToken) {
+    headers['X-Recaptcha-Response'] = captchaToken;
+  }
+
   const response = await fetch(`${API_URL}/api/auth/${endpoint}`, {
     method: 'POST',
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Recaptcha-Response': captchaToken,
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
