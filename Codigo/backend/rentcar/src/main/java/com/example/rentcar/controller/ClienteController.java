@@ -1,5 +1,9 @@
 package com.example.rentcar.controller;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.rentcar.models.Cliente;
+import com.example.rentcar.models.EntidadeEmpregadora;
 import com.example.rentcar.service.ClienteService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +47,8 @@ public class ClienteController {
                 request.rg(),
                 request.cpf(),
                 request.morada(),
-                request.profissao());
+                request.profissao(),
+                toEntidadesEmpregadoras(request.entidadesEmpregadoras()));
         return ClienteResponse.from(updated);
     }
 
@@ -63,7 +69,36 @@ public class ClienteController {
             String rg,
             String cpf,
             String morada,
-            String profissao) {
+            String profissao,
+            List<EntidadeEmpregadoraRequest> entidadesEmpregadoras) {
+    }
+
+    private List<EntidadeEmpregadora> toEntidadesEmpregadoras(
+            List<EntidadeEmpregadoraRequest> requests) {
+        if (requests == null) {
+            return List.of();
+        }
+        List<EntidadeEmpregadora> entidades = new ArrayList<>();
+        for (EntidadeEmpregadoraRequest request : requests) {
+            EntidadeEmpregadora entidade = new EntidadeEmpregadora();
+            if (request != null) {
+                entidade.setNome(request.nome());
+                entidade.setRendimentoAuferido(request.rendimentoAuferido());
+            }
+            entidades.add(entidade);
+        }
+        return entidades;
+    }
+
+    public record EntidadeEmpregadoraRequest(String nome, BigDecimal rendimentoAuferido) {
+    }
+
+    public record EntidadeEmpregadoraResponse(String nome, BigDecimal rendimentoAuferido) {
+        static EntidadeEmpregadoraResponse from(EntidadeEmpregadora entidade) {
+            return new EntidadeEmpregadoraResponse(
+                    entidade.getNome(),
+                    entidade.getRendimentoAuferido());
+        }
     }
 
     public record ClienteResponse(
@@ -72,7 +107,8 @@ public class ClienteController {
             String rg,
             String cpf,
             String morada,
-            String profissao) {
+            String profissao,
+            List<EntidadeEmpregadoraResponse> entidadesEmpregadoras) {
         static ClienteResponse from(Cliente cliente) {
             return new ClienteResponse(
                     cliente.getLogin(),
@@ -80,7 +116,10 @@ public class ClienteController {
                     cliente.getRg(),
                     cliente.getCpf(),
                     cliente.getMorada(),
-                    cliente.getProfissao());
+                    cliente.getProfissao(),
+                    cliente.getEntidadesEmpregadoras().stream()
+                            .map(EntidadeEmpregadoraResponse::from)
+                            .toList());
         }
     }
 }

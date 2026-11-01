@@ -120,7 +120,7 @@ export default function CustomerDashboard() {
             </div>
 
             <div className="dashboard-actions">
-              <Link to="/pedidos" className="auth-submit auth-home__link">Solicitar aluguel</Link>
+              <Link to="/pedidos/novo" className="auth-submit auth-home__link">Solicitar aluguel</Link>
               <Link to="/cliente" className="auth-submit auth-submit--secondary auth-home__link">Meu perfil</Link>
             </div>
 

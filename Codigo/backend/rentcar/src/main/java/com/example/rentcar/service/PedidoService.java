@@ -40,18 +40,7 @@ public class PedidoService {
 
     @Transactional
     public Pedido create(String login, Long automovelId, LocalDate dataInicio, LocalDate dataFim) {
-        if (automovelId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione um automóvel.");
-        }
-        if (dataInicio == null || dataFim == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe as datas do aluguel.");
-        }
-        if (dataInicio.isBefore(LocalDate.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A data de início não pode estar no passado.");
-        }
-        if (!dataFim.isAfter(dataInicio)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A data final deve ser posterior à data inicial.");
-        }
+        validatePeriod(automovelId, dataInicio, dataFim);
 
         Cliente cliente = clienteRepository.findByLogin(login)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -70,5 +59,71 @@ public class PedidoService {
         pedido.setDataFim(dataFim);
         pedido.setStatus(StatusPedido.EM_ANALISE);
         return pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public Pedido update(
+            String login,
+            Long pedidoId,
+            Long automovelId,
+            LocalDate dataInicio,
+            LocalDate dataFim) {
+        validatePeriod(automovelId, dataInicio, dataFim);
+        Pedido pedido = findOwnedPedido(login, pedidoId);
+        ensureModifiable(pedido);
+        Automovel automovel = automovelRepository.findById(automovelId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Automóvel não encontrado."));
+
+        pedido.setAutomovel(automovel);
+        pedido.setDataInicio(dataInicio);
+        pedido.setDataFim(dataFim);
+        pedido.setStatus(StatusPedido.EM_ANALISE);
+        return pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public Pedido cancel(String login, Long pedidoId) {
+        Pedido pedido = findOwnedPedido(login, pedidoId);
+        if (pedido.getStatus() != StatusPedido.PENDENTE && pedido.getStatus() != StatusPedido.EM_ANALISE) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Somente pedidos pendentes ou em análise podem ser cancelados.");
+        }
+        pedido.setStatus(StatusPedido.CANCELADO);
+        return pedidoRepository.save(pedido);
+    }
+
+    private Pedido findOwnedPedido(String login, Long pedidoId) {
+        return pedidoRepository.findByIdAndCliente_Login(pedidoId, login)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pedido não encontrado."));
+    }
+
+    private void ensureModifiable(Pedido pedido) {
+        if (pedido.getStatus() != StatusPedido.PENDENTE
+                && pedido.getStatus() != StatusPedido.EM_ANALISE
+                && pedido.getStatus() != StatusPedido.APROVADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Este pedido não pode mais ser alterado.");
+        }
+    }
+
+    private void validatePeriod(Long automovelId, LocalDate dataInicio, LocalDate dataFim) {
+        if (automovelId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione um automóvel.");
+        }
+        if (dataInicio == null || dataFim == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe as datas do aluguel.");
+        }
+        if (dataInicio.isBefore(LocalDate.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A data de início não pode estar no passado.");
+        }
+        if (!dataFim.isAfter(dataInicio)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A data final deve ser posterior à data inicial.");
+        }
     }
 }

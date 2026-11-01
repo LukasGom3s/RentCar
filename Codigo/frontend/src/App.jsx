@@ -8,6 +8,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ClientProfile from "./pages/ClientProfile";
 import Orders from "./pages/Orders";
 import CustomerDashboard from "./pages/CustomerDashboard";
+import NewOrder from "./pages/NewOrder";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/resetpassword" element={<ResetPassword />} />
         <Route path="/cliente" element={<ClientProfile />} />
         <Route path="/pedidos" element={<Orders />} />
+        <Route path="/pedidos/novo" element={<NewOrder />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
       </Routes>
     </Router>

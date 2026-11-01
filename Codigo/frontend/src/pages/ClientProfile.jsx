@@ -10,6 +10,7 @@ const EMPTY_PROFILE = {
   rg: '',
   morada: '',
   profissao: '',
+  entidadesEmpregadoras: [],
 };
 
 export default function ClientProfile() {
@@ -29,7 +30,10 @@ export default function ClientProfile() {
       .then((data) => {
         if (active) {
           setProfile(data);
-          setFormData(data);
+          setFormData({
+            ...data,
+            entidadesEmpregadoras: data.entidadesEmpregadoras || [],
+          });
         }
       })
       .catch((error) => {
@@ -59,6 +63,32 @@ export default function ClientProfile() {
     setFormData((current) => ({ ...current, [name]: sanitizedValue }));
   };
 
+  const handleEmployerChange = (index, field, value) => {
+    setFormData((current) => ({
+      ...current,
+      entidadesEmpregadoras: current.entidadesEmpregadoras.map((entidade, itemIndex) => (
+        itemIndex === index ? { ...entidade, [field]: value } : entidade
+      )),
+    }));
+  };
+
+  const addEmployer = () => {
+    setFormData((current) => ({
+      ...current,
+      entidadesEmpregadoras: [
+        ...current.entidadesEmpregadoras,
+        { nome: '', rendimentoAuferido: '' },
+      ],
+    }));
+  };
+
+  const removeEmployer = (index) => {
+    setFormData((current) => ({
+      ...current,
+      entidadesEmpregadoras: current.entidadesEmpregadoras.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
   const handleUpdate = async (event) => {
     event.preventDefault();
     setErro('');
@@ -66,9 +96,18 @@ export default function ClientProfile() {
     setSalvando(true);
 
     try {
-      const updatedProfile = await updateMyProfile(formData);
+      const updatedProfile = await updateMyProfile({
+        ...formData,
+        entidadesEmpregadoras: formData.entidadesEmpregadoras.map((entidade) => ({
+          ...entidade,
+          rendimentoAuferido: Number(entidade.rendimentoAuferido),
+        })),
+      });
       setProfile(updatedProfile);
-      setFormData(updatedProfile);
+      setFormData({
+        ...updatedProfile,
+        entidadesEmpregadoras: updatedProfile.entidadesEmpregadoras || [],
+      });
       setEditando(false);
       setMensagem('Seus dados foram atualizados.');
     } catch (error) {
@@ -141,6 +180,51 @@ export default function ClientProfile() {
                     Profissão
                     <input className="auth-input" name="profissao" value={formData.profissao} onChange={handleChange} required />
                   </label>
+                  <section className="employers-form" aria-labelledby="profile-employers-title">
+                    <div className="employers-form__heading">
+                      <div>
+                        <h2 id="profile-employers-title">Entidades empregadoras</h2>
+                        <p>Adicione até três fontes de rendimento.</p>
+                      </div>
+                      {formData.entidadesEmpregadoras.length < 3 && (
+                        <button className="employer-add" type="button" onClick={addEmployer}>
+                          Adicionar
+                        </button>
+                      )}
+                    </div>
+                    {formData.entidadesEmpregadoras.map((entidade, index) => (
+                      <fieldset className="employer-fields" key={index}>
+                        <legend>Entidade {index + 1}</legend>
+                        <input
+                          className="auth-input"
+                          type="text"
+                          value={entidade.nome}
+                          onChange={(event) => handleEmployerChange(index, 'nome', event.target.value)}
+                          placeholder="Nome da entidade empregadora"
+                          aria-label={`Nome da entidade empregadora ${index + 1}`}
+                          required
+                        />
+                        <input
+                          className="auth-input"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={entidade.rendimentoAuferido}
+                          onChange={(event) => handleEmployerChange(index, 'rendimentoAuferido', event.target.value)}
+                          placeholder="Rendimento mensal"
+                          aria-label={`Rendimento da entidade empregadora ${index + 1}`}
+                          required
+                        />
+                        <button
+                          className="employer-remove"
+                          type="button"
+                          onClick={() => removeEmployer(index)}
+                        >
+                          Remover entidade
+                        </button>
+                      </fieldset>
+                    ))}
+                  </section>
                   <label>
                     E-mail
                     <input className="auth-input" type="email" value={profile.email} readOnly />
@@ -164,6 +248,26 @@ export default function ClientProfile() {
                     <ProfileField label="Profissão" value={profile.profissao} />
                     <ProfileField label="E-mail" value={profile.email} />
                   </dl>
+                  <section className="client-employers" aria-labelledby="profile-employers-title">
+                    <h2 id="profile-employers-title">Entidades empregadoras</h2>
+                    {profile.entidadesEmpregadoras?.length ? (
+                      <ul>
+                        {profile.entidadesEmpregadoras.map((entidade, index) => (
+                          <li key={`${entidade.nome}-${index}`}>
+                            <span>{entidade.nome}</span>
+                            <strong>
+                              {new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(entidade.rendimentoAuferido)}
+                            </strong>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>Nenhuma entidade empregadora cadastrada.</p>
+                    )}
+                  </section>
                   <div className="client-profile__actions">
                     <Link to="/dashboard" className="auth-submit auth-submit--secondary auth-home__link">
                       Voltar à dashboard

@@ -12,6 +12,7 @@ export default function Register() {
     rg: '',
     morada: '',
     profissao: '',
+    entidadesEmpregadoras: [],
     senha: '',
     confirmarSenha: ''
   });
@@ -52,6 +53,32 @@ export default function Register() {
     });
   };
 
+  const handleEmployerChange = (index, field, value) => {
+    setFormData((current) => ({
+      ...current,
+      entidadesEmpregadoras: current.entidadesEmpregadoras.map((entidade, itemIndex) => (
+        itemIndex === index ? { ...entidade, [field]: value } : entidade
+      )),
+    }));
+  };
+
+  const addEmployer = () => {
+    setFormData((current) => ({
+      ...current,
+      entidadesEmpregadoras: [
+        ...current.entidadesEmpregadoras,
+        { nome: '', rendimentoAuferido: '' },
+      ],
+    }));
+  };
+
+  const removeEmployer = (index) => {
+    setFormData((current) => ({
+      ...current,
+      entidadesEmpregadoras: current.entidadesEmpregadoras.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setErro('');
@@ -81,6 +108,15 @@ export default function Register() {
       novosErros.confirmarSenha = 'As senhas não coincidem.';
     }
 
+    formData.entidadesEmpregadoras.forEach((entidade, index) => {
+      if (!entidade.nome.trim()) {
+        novosErros[`entidade-${index}`] = 'Informe o nome da entidade empregadora.';
+      }
+      if (!entidade.rendimentoAuferido || Number(entidade.rendimentoAuferido) <= 0) {
+        novosErros[`rendimento-${index}`] = 'Informe um rendimento maior que zero.';
+      }
+    });
+
     setErrosCampos(novosErros);
     if (Object.keys(novosErros).length > 0) {
       return;
@@ -93,7 +129,14 @@ export default function Register() {
 
     setEnviando(true);
     try {
-      const data = await submitAuthRequest('register', formData, captchaToken);
+      const payload = {
+        ...formData,
+        entidadesEmpregadoras: formData.entidadesEmpregadoras.map((entidade) => ({
+          ...entidade,
+          rendimentoAuferido: Number(entidade.rendimentoAuferido),
+        })),
+      };
+      const data = await submitAuthRequest('register', payload, captchaToken);
       navigate('/login', {
         replace: true,
         state: { message: data.mensagem || 'Cadastro realizado. Faça login para continuar.' },
@@ -190,6 +233,59 @@ export default function Register() {
                 aria-describedby={errosCampos.profissao ? 'profissao-error' : undefined}
               />
               {errosCampos.profissao && <small className="auth-field-error" id="profissao-error">{errosCampos.profissao}</small>}
+              <section className="employers-form" aria-labelledby="employers-title">
+                <div className="employers-form__heading">
+                  <div>
+                    <h2 id="employers-title">Entidades empregadoras</h2>
+                    <p>Opcional. Adicione até três fontes de rendimento.</p>
+                  </div>
+                  {formData.entidadesEmpregadoras.length < 3 && (
+                    <button className="employer-add" type="button" onClick={addEmployer}>
+                      Adicionar
+                    </button>
+                  )}
+                </div>
+                {formData.entidadesEmpregadoras.map((entidade, index) => (
+                  <fieldset className="employer-fields" key={index}>
+                    <legend>Entidade {index + 1}</legend>
+                    <input
+                      className="auth-input"
+                      type="text"
+                      value={entidade.nome}
+                      onChange={(event) => handleEmployerChange(index, 'nome', event.target.value)}
+                      placeholder="Nome da entidade empregadora"
+                      aria-label={`Nome da entidade empregadora ${index + 1}`}
+                      required
+                      aria-invalid={Boolean(errosCampos[`entidade-${index}`])}
+                    />
+                    {errosCampos[`entidade-${index}`] && (
+                      <small className="auth-field-error">{errosCampos[`entidade-${index}`]}</small>
+                    )}
+                    <input
+                      className="auth-input"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={entidade.rendimentoAuferido}
+                      onChange={(event) => handleEmployerChange(index, 'rendimentoAuferido', event.target.value)}
+                      placeholder="Rendimento mensal"
+                      aria-label={`Rendimento da entidade empregadora ${index + 1}`}
+                      required
+                      aria-invalid={Boolean(errosCampos[`rendimento-${index}`])}
+                    />
+                    {errosCampos[`rendimento-${index}`] && (
+                      <small className="auth-field-error">{errosCampos[`rendimento-${index}`]}</small>
+                    )}
+                    <button
+                      className="employer-remove"
+                      type="button"
+                      onClick={() => removeEmployer(index)}
+                    >
+                      Remover entidade
+                    </button>
+                  </fieldset>
+                ))}
+              </section>
               <input
                 type="email"
                 name="email"

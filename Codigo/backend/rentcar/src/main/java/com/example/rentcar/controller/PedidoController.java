@@ -8,7 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,6 +50,27 @@ public class PedidoController {
                 request.dataInicio(),
                 request.dataFim());
         return PedidoResponse.from(pedido);
+    }
+
+    @PutMapping("/{pedidoId}")
+    public PedidoResponse update(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long pedidoId,
+            @RequestBody PedidoCreateRequest request) {
+        Pedido pedido = pedidoService.update(
+                user.getUsername(),
+                pedidoId,
+                request.automovelId(),
+                request.dataInicio(),
+                request.dataFim());
+        return PedidoResponse.from(pedido);
+    }
+
+    @PatchMapping("/{pedidoId}/cancelamento")
+    public PedidoResponse cancel(
+            @AuthenticationPrincipal UserDetails user,
+            @PathVariable Long pedidoId) {
+        return PedidoResponse.from(pedidoService.cancel(user.getUsername(), pedidoId));
     }
 
     public record PedidoCreateRequest(

@@ -12,12 +12,16 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.rentcar.config.UserConfig;
+import com.example.rentcar.models.EntidadeEmpregadora;
 import com.example.rentcar.service.PasswordRecoveryService;
 import com.example.rentcar.service.SendEmailService;
 import com.example.rentcar.service.UserService;
 
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Value;
 
@@ -98,34 +102,34 @@ public class SecureLoginController {
     // =========================================================
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> dadosCadastro) {
-        String email = dadosCadastro.get("email");
+    public ResponseEntity<?> register(@RequestBody RegisterRequest dadosCadastro) {
+        String email = dadosCadastro.email();
 
         if (isBlank(email)
-                || isBlank(dadosCadastro.get("senha"))
-                || isBlank(dadosCadastro.get("nome"))
-                || isBlank(dadosCadastro.get("rg"))
-                || isBlank(dadosCadastro.get("cpf"))
-                || isBlank(dadosCadastro.get("morada"))
-                || isBlank(dadosCadastro.get("profissao"))) {
+                || isBlank(dadosCadastro.senha())
+                || isBlank(dadosCadastro.nome())
+                || isBlank(dadosCadastro.rg())
+                || isBlank(dadosCadastro.cpf())
+                || isBlank(dadosCadastro.morada())
+                || isBlank(dadosCadastro.profissao())) {
             Map<String, String> error = new HashMap<>();
             error.put("erro", "Preencha todos os campos obrigatórios.");
             return ResponseEntity.badRequest().body(error);
         }
 
-        if (!dadosCadastro.get("cpf").matches("\\d+")) {
+        if (!dadosCadastro.cpf().matches("\\d+")) {
             Map<String, String> error = new HashMap<>();
             error.put("erro", "O CPF deve conter somente números.");
             return ResponseEntity.badRequest().body(error);
         }
 
-        if (!dadosCadastro.get("rg").matches("[a-zA-Z0-9]+")) {
+        if (!dadosCadastro.rg().matches("[a-zA-Z0-9]+")) {
             Map<String, String> error = new HashMap<>();
             error.put("erro", "O RG deve conter somente letras e números.");
             return ResponseEntity.badRequest().body(error);
         }
 
-        if (!dadosCadastro.get("senha").equals(dadosCadastro.get("confirmarSenha"))) {
+        if (!dadosCadastro.senha().equals(dadosCadastro.confirmarSenha())) {
             Map<String, String> error = new HashMap<>();
             error.put("erro", "As senhas não coincidem.");
             return ResponseEntity.badRequest().body(error);
@@ -137,19 +141,59 @@ public class SecureLoginController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
 
-        userService.createUser(
-                email,
-                dadosCadastro.get("senha"),
-                dadosCadastro.get("nome"),
-                dadosCadastro.get("rg"),
-                dadosCadastro.get("cpf"),
-                dadosCadastro.get("morada"),
-                dadosCadastro.get("profissao")
-        );
+        List<EntidadeEmpregadora> entidadesEmpregadoras;
+        try {
+            entidadesEmpregadoras = toEntidadesEmpregadoras(dadosCadastro.entidadesEmpregadoras());
+            userService.createUser(
+                    email,
+                    dadosCadastro.senha(),
+                    dadosCadastro.nome(),
+                    dadosCadastro.rg(),
+                    dadosCadastro.cpf(),
+                    dadosCadastro.morada(),
+                    dadosCadastro.profissao(),
+                    entidadesEmpregadoras);
+        } catch (IllegalArgumentException exception) {
+            Map<String, String> error = new HashMap<>();
+            error.put("erro", exception.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
 
         Map<String, String> response = new HashMap<>();
         response.put("mensagem", "Utilizador registado com sucesso!");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    private List<EntidadeEmpregadora> toEntidadesEmpregadoras(
+            List<EntidadeEmpregadoraRequest> requests) {
+        if (requests == null) {
+            return List.of();
+        }
+        List<EntidadeEmpregadora> entidades = new ArrayList<>();
+        for (EntidadeEmpregadoraRequest request : requests) {
+            EntidadeEmpregadora entidade = new EntidadeEmpregadora();
+            if (request != null) {
+                entidade.setNome(request.nome());
+                entidade.setRendimentoAuferido(request.rendimentoAuferido());
+            }
+            entidades.add(entidade);
+        }
+        return entidades;
+    }
+
+    public record RegisterRequest(
+            String email,
+            String senha,
+            String confirmarSenha,
+            String nome,
+            String rg,
+            String cpf,
+            String morada,
+            String profissao,
+            List<EntidadeEmpregadoraRequest> entidadesEmpregadoras) {
+    }
+
+    public record EntidadeEmpregadoraRequest(String nome, BigDecimal rendimentoAuferido) {
     }
 
     private boolean isBlank(String value) {

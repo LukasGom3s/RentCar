@@ -8,12 +8,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.rentcar.models.Cliente;
+import com.example.rentcar.models.EntidadeEmpregadora;
 import com.example.rentcar.repository.ClienteRepository;
 import com.example.rentcar.repository.PedidoRepository;
 
@@ -38,13 +41,18 @@ class ClienteServiceTests {
                 "RG2",
                 "456",
                 "Morada nova",
-                "Profissão nova");
+                "Profissão nova",
+                List.of(employer("Empresa", "2500.00")));
 
         assertEquals("Nome novo", updated.getNome());
         assertEquals("456", updated.getCpf());
         assertEquals("RG2", updated.getRg());
         assertEquals("Morada nova", updated.getMorada());
         assertEquals("Profissão nova", updated.getProfissao());
+        assertEquals(1, updated.getEntidadesEmpregadoras().size());
+        assertEquals("Empresa", updated.getEntidadesEmpregadoras().get(0).getNome());
+        assertEquals(new BigDecimal("2500.00"),
+                updated.getEntidadesEmpregadoras().get(0).getRendimentoAuferido());
         assertEquals("cliente@example.com", updated.getLogin());
     }
 
@@ -60,7 +68,29 @@ class ClienteServiceTests {
                 "RG1",
                 "12-34",
                 "Morada",
-                "Profissão"));
+                "Profissão",
+                List.of()));
+
+        verify(repository, never()).findByLogin(any());
+    }
+
+    @Test
+    void rejectsMoreThanThreeEmployers() {
+        ClienteRepository repository = mock(ClienteRepository.class);
+        ClienteService service = new ClienteService(repository, mock(PedidoRepository.class));
+
+        assertThrows(ResponseStatusException.class, () -> service.update(
+                "cliente@example.com",
+                "Nome",
+                "RG1",
+                "1234",
+                "Morada",
+                "Profissão",
+                List.of(
+                        employer("Empresa A", "1000"),
+                        employer("Empresa B", "1200"),
+                        employer("Empresa C", "1400"),
+                        employer("Empresa D", "1600"))));
 
         verify(repository, never()).findByLogin(any());
     }
@@ -77,5 +107,12 @@ class ClienteServiceTests {
         service.delete("cliente@example.com");
 
         verify(repository).delete(cliente);
+    }
+
+    private EntidadeEmpregadora employer(String nome, String rendimento) {
+        EntidadeEmpregadora entidade = new EntidadeEmpregadora();
+        entidade.setNome(nome);
+        entidade.setRendimentoAuferido(new BigDecimal(rendimento));
+        return entidade;
     }
 }

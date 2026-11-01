@@ -1,6 +1,10 @@
 package com.example.rentcar.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 import com.example.rentcar.models.Cliente;
+import com.example.rentcar.models.EntidadeEmpregadora;
 import com.example.rentcar.models.Usuario;
 import com.example.rentcar.repository.UsuarioRepository;
 import org.springframework.security.core.userdetails.User;
@@ -42,10 +46,12 @@ public class UserService implements UserDetailsService {
             String rg,
             String cpf,
             String morada,
-            String profissao) {
+            String profissao,
+            List<EntidadeEmpregadora> entidadesEmpregadoras) {
         if (exists(email)) {
             throw new IllegalArgumentException("Email já cadastrado.");
         }
+        validarEntidadesEmpregadoras(entidadesEmpregadoras);
 
         Cliente novoCliente = new Cliente();
         novoCliente.setLogin(email);
@@ -55,8 +61,29 @@ public class UserService implements UserDetailsService {
         novoCliente.setCpf(cpf);
         novoCliente.setMorada(morada);
         novoCliente.setProfissao(profissao);
-        
+        entidadesEmpregadoras.forEach(entidade -> {
+            entidade.setId(null);
+            novoCliente.addEntidadeEmpregadora(entidade);
+        });
+
         usuarioRepository.save(novoCliente);
+    }
+
+    private void validarEntidadesEmpregadoras(List<EntidadeEmpregadora> entidadesEmpregadoras) {
+        if (entidadesEmpregadoras == null || entidadesEmpregadoras.size() > 3) {
+            throw new IllegalArgumentException("Informe no máximo três entidades empregadoras.");
+        }
+        for (EntidadeEmpregadora entidade : entidadesEmpregadoras) {
+            if (entidade == null
+                    || entidade.getNome() == null
+                    || entidade.getNome().isBlank()
+                    || entidade.getRendimentoAuferido() == null
+                    || entidade.getRendimentoAuferido().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException(
+                        "Cada entidade empregadora deve ter nome e rendimento maior que zero.");
+            }
+            entidade.setNome(entidade.getNome().trim());
+        }
     }
 
     // 3. Verificar se existe

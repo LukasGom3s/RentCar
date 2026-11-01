@@ -1,11 +1,15 @@
 package com.example.rentcar.service;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.example.rentcar.models.Cliente;
+import com.example.rentcar.models.EntidadeEmpregadora;
 import com.example.rentcar.repository.ClienteRepository;
 import com.example.rentcar.repository.PedidoRepository;
 
@@ -35,12 +39,14 @@ public class ClienteService {
             String rg,
             String cpf,
             String morada,
-            String profissao) {
+            String profissao,
+            List<EntidadeEmpregadora> entidadesEmpregadoras) {
         requireValue(nome, "Nome");
         requireValue(rg, "RG");
         requireValue(cpf, "CPF");
         requireValue(morada, "Morada");
         requireValue(profissao, "Profissão");
+        validateEntidadesEmpregadoras(entidadesEmpregadoras);
 
         if (!cpf.matches("\\d+")) {
             throw new ResponseStatusException(
@@ -60,6 +66,7 @@ public class ClienteService {
         cliente.setCpf(cpf.trim());
         cliente.setMorada(morada.trim());
         cliente.setProfissao(profissao.trim());
+        cliente.setEntidadesEmpregadoras(entidadesEmpregadoras);
         return clienteRepository.save(cliente);
     }
 
@@ -79,6 +86,26 @@ public class ClienteService {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     field + " é obrigatório.");
+        }
+    }
+
+    private void validateEntidadesEmpregadoras(List<EntidadeEmpregadora> entidadesEmpregadoras) {
+        if (entidadesEmpregadoras == null || entidadesEmpregadoras.size() > 3) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Informe no máximo três entidades empregadoras.");
+        }
+        for (EntidadeEmpregadora entidade : entidadesEmpregadoras) {
+            if (entidade == null
+                    || entidade.getNome() == null
+                    || entidade.getNome().isBlank()
+                    || entidade.getRendimentoAuferido() == null
+                    || entidade.getRendimentoAuferido().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Cada entidade empregadora deve ter nome e rendimento maior que zero.");
+            }
+            entidade.setNome(entidade.getNome().trim());
         }
     }
 }

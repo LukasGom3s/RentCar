@@ -35,3 +35,21 @@ export async function createOrder(order) {
   });
   return readResponse(response);
 }
+
+export async function updateOrder(id, order) {
+  const response = await fetch(`${API_URL}/api/pedidos/me/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order),
+  });
+  return readResponse(response);
+}
+
+export async function cancelOrder(id) {
+  const response = await fetch(`${API_URL}/api/pedidos/me/${id}/cancelamento`, {
+    method: 'PATCH',
+    credentials: 'include',
+  });
+  return readResponse(response);
+}
