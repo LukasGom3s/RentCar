@@ -54,27 +54,6 @@ O sistema é composto por uma aplicação React + Vite, uma API REST em Spring B
 - Área administrativa para cadastrar, consultar e editar agentes de empresas e bancos.
 - Frota demonstrativa criada automaticamente quando a tabela de automóveis está vazia.
 
-## Aderência ao enunciado
-
-Esta tabela compara o código e os modelos atualmente presentes no repositório com o enunciado do Laboratório 02. “Parcial” indica que existe um fluxo relacionado, mas o requisito não está representado integralmente.
-
-| Requisito | Situação | Evidência / observação |
-|---|---|---|
-| Java 25, Maven, React + Vite, Supabase/PostgreSQL e autenticação | ✅ Implementado | As tecnologias estão configuradas nos módulos `Codigo/backend/rentcar` e `Codigo/frontend`. |
-| Spring Boot 4.0.x | ⚠️ Divergente | O `pom.xml` atualmente usa Spring Boot 4.1.2, não a série 4.0.x indicada no enunciado. |
-| Cadastro e autenticação de clientes e agentes | ⚠️ Parcial | As rotas de negócio são protegidas por Spring Security, mas `GET /api/automoveis` permite consulta do catálogo sem login. |
-| CRUD do perfil do cliente e limite de três empregadores, cada qual com rendimento positivo | ✅ Implementado | Cadastro, RG, CPF, nome, morada, profissão e rendimentos são validados; o perfil permite consulta, atualização e exclusão. A exclusão é bloqueada se o cliente já tiver pedidos registrados. |
-| Cliente criar, consultar, modificar e cancelar pedidos | ✅ Implementado | As operações são restritas ao próprio cliente e respeitam as regras de status. |
-| Agente modificar e avaliar pedidos; parecer financeiro registrado | ✅ Implementado | O agente edita pedidos em análise e registra parecer positivo ou negativo, visível ao cliente. |
-| Pedido aprovado encaminhado para consideração da execução e contrato consultável | ✅ Implementado | O pedido passa por `AGUARDANDO_EXECUCAO` e, após formalização, por `CONTRATO_EXECUTADO`. |
-| Back-end Spring MVC, front-end web dinâmico e persistência Supabase | ✅ Implementado | A API Spring é organizada em controllers/services/repositories/models; o front-end usa React + Vite e o acesso a dados usa PostgreSQL/JPA. |
-| Registrar se o automóvel pertence a cliente, empresa ou banco | ⚠️ Parcial | O catálogo guarda matrícula, ano, marca, modelo e placa, mas o modelo `Automovel` não possui proprietário. A frota atual é demonstrativa; não há cadastro administrativo de veículos. |
-| Associar aluguel a contrato de crédito concedido por banco agente | ⚠️ Parcial | O contrato aceita um texto opcional de detalhes bancários, mas não existe uma entidade de crédito separada nem uma associação estruturada ao banco concedente. |
-| Modelagem de casos de uso, histórias, classes e pacotes alinhada ao código | ⚠️ Parcial | Os quatro documentos estão em `Docs/`, mas os diagramas visuais de classes e pacotes ainda não refletem integralmente o modelo e os pacotes atuais. Devem ser atualizados antes da entrega final. |
-| Repositório GitHub com versões dos modelos e código final | ⚠️ A confirmar | O repositório e os documentos estão presentes localmente. A publicação das alterações atuais no GitHub depende de commit e push; o estado remoto não é verificado por este README. |
-
-**Conclusão:** os principais fluxos de autenticação, perfil de cliente, pedidos, análise financeira e contratos estão implementados. O projeto ainda não atende integralmente ao enunciado: faltam a propriedade do automóvel no modelo, a associação estruturada do crédito ao banco, a atualização dos diagramas visuais e o alinhamento da versão do Spring Boot. A apresentação final do protótipo também deve ser realizada pela equipe.
-
 ## Tecnologias e arquitetura
 
 ### Tecnologias
