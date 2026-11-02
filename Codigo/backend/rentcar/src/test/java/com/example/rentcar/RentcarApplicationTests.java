@@ -144,6 +144,36 @@ class RentcarApplicationTests {
 	}
 
 	@Test
+	@WithMockUser(username = "agente@example.com", roles = "AGENTE")
+	void allowsAgentToReadFormalizedContracts() throws Exception {
+		mockMvc.perform(get("/api/agente/contratos"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@WithMockUser(username = "cliente@example.com", roles = "CLIENTE")
+	void allowsClientToReadTheirFormalizedContracts() throws Exception {
+		mockMvc.perform(get("/api/contratos/me"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@WithMockUser(username = "cliente@example.com", roles = "CLIENTE")
+	void preventsClientFromReadingAgentContracts() throws Exception {
+		mockMvc.perform(get("/api/agente/contratos"))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@WithMockUser(username = "cliente@example.com", roles = "CLIENTE")
+	void preventsClientFromExecutingAContract() throws Exception {
+		mockMvc.perform(post("/api/agente/contratos/pedidos/1/execucao")
+				.contentType("application/json")
+				.content("{}"))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void reportsUnauthenticatedSession() throws Exception {
 		mockMvc.perform(get("/api/auth/session"))
 				.andExpect(status().isUnauthorized());

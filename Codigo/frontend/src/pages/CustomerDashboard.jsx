@@ -9,6 +9,7 @@ const STATUS_LABELS = {
   EM_ANALISE: 'Em análise',
   APROVADO: 'Aprovado',
   AGUARDANDO_EXECUCAO: 'Aguardando execução do contrato',
+  CONTRATO_EXECUTADO: 'Contrato formalizado',
   REJEITADO: 'Rejeitado',
   CANCELADO: 'Cancelado',
 };

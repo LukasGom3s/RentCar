@@ -75,6 +75,30 @@ export async function getAgentOrdersAwaitingExecution() {
   return readResponse(response);
 }
 
+export async function getAgentContracts() {
+  const response = await fetch(`${API_URL}/api/agente/contratos`, {
+    credentials: 'include',
+  });
+  return readResponse(response);
+}
+
+export async function executeContractForOrder(pedidoId, detalhesCreditoBanco) {
+  const response = await fetch(`${API_URL}/api/agente/contratos/pedidos/${pedidoId}/execucao`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ detalhesCreditoBanco }),
+  });
+  return readResponse(response);
+}
+
+export async function getMyContracts() {
+  const response = await fetch(`${API_URL}/api/contratos/me`, {
+    credentials: 'include',
+  });
+  return readResponse(response);
+}
+
 export async function submitFinancialOpinion(id, aprovado, parecer) {
   const response = await fetch(`${API_URL}/api/agente/pedidos/${id}/parecer`, {
     method: 'PATCH',

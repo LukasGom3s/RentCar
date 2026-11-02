@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import logoRentCar from '../assets/LogoRentCar.png';
 import { getCurrentSession } from '../services/auth';
 import {
+  executeContractForOrder,
   forwardOrderForExecution,
   getAutomoveis,
+  getAgentContracts,
   getAgentApprovedOrders,
   getAgentOrdersAwaitingExecution,
   getAgentOrdersAwaitingReview,
@@ -37,6 +39,9 @@ export default function AgentDashboard() {
   const [pedidos, setPedidos] = useState([]);
   const [pedidosAprovados, setPedidosAprovados] = useState([]);
   const [pedidosEncaminhados, setPedidosEncaminhados] = useState([]);
+  const [contratosFormalizados, setContratosFormalizados] = useState([]);
+  const [pedidoFormalizando, setPedidoFormalizando] = useState(null);
+  const [detalhesCredito, setDetalhesCredito] = useState('');
   const [automoveis, setAutomoveis] = useState([]);
   const [pedidoEditando, setPedidoEditando] = useState(null);
   const [dadosEdicao, setDadosEdicao] = useState(null);
@@ -62,17 +67,19 @@ export default function AgentDashboard() {
           return;
         }
         setSession(currentSession);
-        const [agentOrders, cars, approvedOrders, executionOrders] = await Promise.all([
+        const [agentOrders, cars, approvedOrders, executionOrders, contracts] = await Promise.all([
           getAgentOrdersAwaitingReview(),
           getAutomoveis(),
           getAgentApprovedOrders(),
           getAgentOrdersAwaitingExecution(),
+          getAgentContracts(),
         ]);
         if (active) {
           setPedidos(agentOrders);
           setAutomoveis(cars);
           setPedidosAprovados(approvedOrders);
           setPedidosEncaminhados(executionOrders);
+          setContratosFormalizados(contracts);
         }
       } catch (requestError) {
         if (!active) {
@@ -105,14 +112,16 @@ export default function AgentDashboard() {
     setError('');
     setMensagem('');
     try {
-      const [agentOrders, approvedOrders, executionOrders] = await Promise.all([
+      const [agentOrders, approvedOrders, executionOrders, contracts] = await Promise.all([
         getAgentOrdersAwaitingReview(),
         getAgentApprovedOrders(),
         getAgentOrdersAwaitingExecution(),
+        getAgentContracts(),
       ]);
       setPedidos(agentOrders);
       setPedidosAprovados(approvedOrders);
       setPedidosEncaminhados(executionOrders);
+      setContratosFormalizados(contracts);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -175,6 +184,39 @@ export default function AgentDashboard() {
         ...current.filter((item) => item.id !== pedido.id),
       ]);
       setMensagem(`Pedido #${pedido.id} encaminhado para consideração da execução do contrato.`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setPedidoEmAcao(null);
+    }
+  };
+
+  const abrirFormalizacao = (pedido) => {
+    setError('');
+    setMensagem('');
+    setPedidoFormalizando(pedido.id);
+    setDetalhesCredito('');
+  };
+
+  const cancelarFormalizacao = () => {
+    setPedidoFormalizando(null);
+    setDetalhesCredito('');
+  };
+
+  const formalizarContrato = async (event, pedido) => {
+    event.preventDefault();
+    setPedidoEmAcao(pedido.id);
+    setError('');
+    setMensagem('');
+    try {
+      const contrato = await executeContractForOrder(
+        pedido.id,
+        session.tipoAgente === 'BANCO' ? detalhesCredito : '',
+      );
+      setPedidosEncaminhados((current) => current.filter((item) => item.id !== pedido.id));
+      setContratosFormalizados((current) => [contrato, ...current]);
+      cancelarFormalizacao();
+      setMensagem(`Contrato #${contrato.id} formalizado para o pedido #${pedido.id}.`);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -496,6 +538,88 @@ export default function AgentDashboard() {
                       <strong>Parecer:</strong> {pedido.parecerFinanceiro}
                     </p>
                   )}
+                  {pedidoFormalizando === pedido.id ? (
+                    <form
+                      className="agent-review__opinion-form"
+                      onSubmit={(event) => formalizarContrato(event, pedido)}
+                    >
+                      <h4>Formalizar contrato</h4>
+                      {session.tipoAgente === 'BANCO' ? (
+                        <label htmlFor={`credito-${pedido.id}`}>
+                          Detalhes do crédito bancário (opcional)
+                          <textarea
+                            id={`credito-${pedido.id}`}
+                            className="auth-input"
+                            value={detalhesCredito}
+                            onChange={(event) => setDetalhesCredito(event.target.value)}
+                            placeholder="Informe os dados do contrato de crédito, se houver."
+                            maxLength={2000}
+                            rows={3}
+                          />
+                        </label>
+                      ) : (
+                        <p className="orders-list__empty">
+                          O contrato será formalizado sem crédito bancário. Quando houver crédito,
+                          ele deve ser registrado por um agente de banco.
+                        </p>
+                      )}
+                      <div className="order-actions">
+                        <button
+                          className="auth-submit"
+                          type="submit"
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          {pedidoEmAcao === pedido.id ? 'Formalizando...' : 'Confirmar formalização'}
+                        </button>
+                        <button
+                          className="auth-submit auth-submit--secondary"
+                          type="button"
+                          onClick={cancelarFormalizacao}
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          Voltar
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button
+                      className="auth-submit agent-review__forward"
+                      type="button"
+                      onClick={() => abrirFormalizacao(pedido)}
+                      disabled={pedidoEmAcao !== null}
+                    >
+                      Formalizar contrato
+                    </button>
+                  )}
+                </article>
+              ))}
+            </section>
+
+            <section className="orders-list" aria-labelledby="formalized-contracts-title">
+              <div className="orders-list__toolbar">
+                <h2 id="formalized-contracts-title" className="orders-list__title">Contratos formalizados</h2>
+              </div>
+              {!carregando && contratosFormalizados.length === 0 && (
+                <p className="orders-list__empty">Nenhum contrato foi formalizado.</p>
+              )}
+              {contratosFormalizados.map((contrato) => (
+                <article className="order-item agent-review-item" key={contrato.id}>
+                  <div className="order-item__heading">
+                    <h3>Contrato #{contrato.id} · {contrato.clienteNome}</h3>
+                    <span className="order-status order-status--aprovado">Formalizado</span>
+                  </div>
+                  <p>
+                    Pedido #{contrato.pedidoId} · {contrato.marca} {contrato.modelo} ({contrato.ano})
+                  </p>
+                  <p>Período: {formatDate(contrato.dataInicio)} – {formatDate(contrato.dataFim)}</p>
+                  {contrato.detalhesCreditoBanco && (
+                    <p className="agent-review__saved-opinion">
+                      <strong>Crédito bancário:</strong> {contrato.detalhesCreditoBanco}
+                    </p>
+                  )}
+                  <small>
+                    Formalizado em {new Intl.DateTimeFormat('pt-BR').format(new Date(contrato.dataFormalizacao))}
+                  </small>
                 </article>
               ))}
             </section>

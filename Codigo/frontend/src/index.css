@@ -605,6 +605,30 @@ a {
   overflow-wrap: anywhere;
 }
 
+.customer-contract {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #cce5d5;
+  border-radius: 9px;
+  background: #f2f8f4;
+}
+
+.customer-contract h4 {
+  margin: 0;
+  color: #18764b;
+  font-size: 15px;
+}
+
+.customer-contract p {
+  margin: 0;
+  color: #52677d;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .order-actions,
 .order-edit-form {
   display: grid;
@@ -663,6 +687,11 @@ a {
 .order-status--aguardando_execucao {
   background: #e5f5ec;
   color: #18764b;
+}
+
+.order-status--contrato_executado {
+  background: #d7f0e2;
+  color: #12643e;
 }
 
 .order-status--rejeitado,

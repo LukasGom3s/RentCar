@@ -5,6 +5,7 @@ public enum StatusPedido {
     EM_ANALISE,
     APROVADO,
     AGUARDANDO_EXECUCAO,
+    CONTRATO_EXECUTADO,
     REJEITADO,
     CANCELADO
 }

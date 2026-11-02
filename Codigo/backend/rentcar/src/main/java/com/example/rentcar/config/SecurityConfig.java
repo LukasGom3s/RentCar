@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/automoveis").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/agente/**").hasRole("AGENTE")
+                .requestMatchers("/api/contratos/**").hasRole("CLIENTE")
                 .requestMatchers("/api/clientes/**", "/api/pedidos/**").hasRole("CLIENTE")
                 // Tudo o resto exige autenticação
                 .anyRequest().authenticated()

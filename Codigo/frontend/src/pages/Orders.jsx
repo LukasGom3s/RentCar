@@ -4,6 +4,7 @@ import logoRentCar from '../assets/LogoRentCar.png';
 import {
   cancelOrder,
   getAutomoveis,
+  getMyContracts,
   getMyOrders,
   updateOrder,
 } from '../services/orders';
@@ -32,6 +33,7 @@ const STATUS_LABELS = {
   EM_ANALISE: 'Em análise',
   APROVADO: 'Aprovado',
   AGUARDANDO_EXECUCAO: 'Aguardando execução do contrato',
+  CONTRATO_EXECUTADO: 'Contrato formalizado',
   REJEITADO: 'Rejeitado',
   CANCELADO: 'Cancelado',
 };
@@ -39,6 +41,7 @@ const STATUS_LABELS = {
 export default function Orders() {
   const [automoveis, setAutomoveis] = useState([]);
   const [pedidos, setPedidos] = useState([]);
+  const [contratos, setContratos] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('TODOS');
   const [pedidoEditando, setPedidoEditando] = useState(null);
   const [dadosEdicao, setDadosEdicao] = useState(null);
@@ -52,8 +55,8 @@ export default function Orders() {
   useEffect(() => {
     let active = true;
 
-    Promise.allSettled([getAutomoveis(), getMyOrders()])
-      .then(([carsResult, ordersResult]) => {
+    Promise.allSettled([getAutomoveis(), getMyOrders(), getMyContracts()])
+      .then(([carsResult, ordersResult, contractsResult]) => {
         if (!active) {
           return;
         }
@@ -71,6 +74,12 @@ export default function Orders() {
           setSessaoAtiva(false);
         } else if (carsResult.status === 'fulfilled') {
           setErro(ordersResult.reason.message);
+        }
+
+        if (contractsResult.status === 'fulfilled') {
+          setContratos(contractsResult.value);
+        } else if (ordersResult.status === 'fulfilled') {
+          setErro(contractsResult.reason.message);
         }
       })
       .finally(() => {
@@ -222,6 +231,22 @@ export default function Orders() {
                       <strong>Parecer do agente:</strong> {pedido.parecerFinanceiro}
                     </p>
                   )}
+                  {contratos.filter((contrato) => contrato.pedidoId === pedido.id).map((contrato) => (
+                    <section className="customer-contract" key={contrato.id}>
+                      <h4>Contrato #{contrato.id}</h4>
+                      <p>
+                        Formalizado em {new Intl.DateTimeFormat('pt-BR').format(
+                          new Date(contrato.dataFormalizacao),
+                        )}
+                      </p>
+                      <p>Registrado pelo agente {contrato.agenteLogin}.</p>
+                      {contrato.detalhesCreditoBanco && (
+                        <p>
+                          <strong>Crédito bancário:</strong> {contrato.detalhesCreditoBanco}
+                        </p>
+                      )}
+                    </section>
+                  ))}
                   <small>Solicitado em {new Intl.DateTimeFormat('pt-BR').format(new Date(pedido.dataCriacao))}</small>
                   {pedidoEditando === pedido.id && dadosEdicao ? (
                     <form
