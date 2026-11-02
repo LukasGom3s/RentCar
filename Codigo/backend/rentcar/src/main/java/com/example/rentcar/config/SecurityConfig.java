@@ -46,6 +46,7 @@ public class SecurityConfig {
                 // Rotas públicas da nossa nova API
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/automoveis").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/clientes/**", "/api/pedidos/**").hasRole("CLIENTE")
                 // Tudo o resto exige autenticação
                 .anyRequest().authenticated()

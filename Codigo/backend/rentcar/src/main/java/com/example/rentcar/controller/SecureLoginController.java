@@ -132,6 +132,8 @@ public class SecureLoginController {
             } else if (roles.contains("ROLE_AGENTE_BANCO")) {
                 response.put("tipoAgente", "BANCO");
             }
+        } else if (roles.contains("ROLE_ADMIN")) {
+            response.put("tipoUsuario", "ADMIN");
         } else if (roles.contains("ROLE_CLIENTE")) {
             response.put("tipoUsuario", "CLIENTE");
         }

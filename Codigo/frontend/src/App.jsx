@@ -10,6 +10,8 @@ import Orders from "./pages/Orders";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import NewOrder from "./pages/NewOrder";
 import AgentDashboard from "./pages/AgentDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminAgentEdit from "./pages/AdminAgentEdit";
 
 export default function App() {
   return (
@@ -25,6 +27,8 @@ export default function App() {
         <Route path="/pedidos/novo" element={<NewOrder />} />
         <Route path="/dashboard" element={<CustomerDashboard />} />
         <Route path="/agente" element={<AgentDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/agentes/:id/editar" element={<AdminAgentEdit />} />
       </Routes>
     </Router>
   );
