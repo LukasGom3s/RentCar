@@ -42,3 +42,15 @@ Todo o back-end está contido no pacote base `com.example.rentcar` e é subdivid
 
 * **Supabase (PostgreSQL):** 
   Banco de dados relacional hospedado na nuvem que armazena todas as informações persistentes do sistema. O acesso é feito através dos `repositories` do Spring Boot utilizando JDBC/JPA.
+
+<hr style="border: 1px solid #E0E0E0;">
+
+<h3 style="color: #26D0FA;">2.4. CRUD de Cliente</h3>
+
+O cadastro de cliente é realizado em `POST /api/auth/register`. Após a autenticação, o cliente pode consultar e atualizar somente o próprio perfil em `GET /api/clientes/me` e `PUT /api/clientes/me`, ou excluir a própria conta em `DELETE /api/clientes/me`. O controller obtém a identidade da sessão autenticada e delega as operações ao serviço e ao repositório de clientes.
+
+Agentes autenticados podem consultar a fila financeira em `GET /api/agente/pedidos`, que apresenta os rendimentos declarados pelo cliente, e registrar a decisão e o texto do parecer em `PATCH /api/agente/pedidos/{id}/parecer`. O parecer registrado também é retornado ao cliente. Somente pedidos em análise podem ser aprovados ou reprovados.
+
+Na mesma fila, o agente pode editar o automóvel e o período do pedido em `PUT /api/agente/pedidos/{id}`; a edição só é permitida enquanto o pedido estiver em análise.
+
+Pedidos aprovados aparecem em `GET /api/agente/pedidos/aprovados`. O agente pode encaminhar um pedido para consideração da execução do contrato em `PATCH /api/agente/pedidos/{id}/execucao`; somente pedidos aprovados podem avançar para `AGUARDANDO_EXECUCAO`. A fila `GET /api/agente/pedidos/execucao` permite consultar os pedidos encaminhados. A formalização cria um contrato ligado ao pedido por `POST /api/agente/contratos/pedidos/{id}/execucao`. Somente agente de banco pode preencher os detalhes opcionais do crédito. Agentes consultam contratos formalizados em `GET /api/agente/contratos`, e clientes consultam os próprios contratos em `GET /api/contratos/me`.
