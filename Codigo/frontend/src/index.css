@@ -818,6 +818,106 @@ a {
   color: #c4cfda;
 }
 
+.agent-dashboard-card {
+  width: min(1280px, 100%);
+  grid-template-columns: 36% 64%;
+}
+
+.agent-dashboard-card .auth-content {
+  align-items: flex-start;
+  padding: 42px clamp(24px, 4vw, 52px);
+}
+
+.agent-dashboard-content {
+  max-width: 760px;
+}
+
+.agent-dashboard-content .auth-title {
+  margin-bottom: 10px;
+}
+
+.agent-dashboard-content .auth-home__description {
+  margin-bottom: 20px;
+  font-size: 15px;
+}
+
+.agent-dashboard-content .orders-list {
+  margin-top: 20px;
+}
+
+.agent-dashboard-content .orders-list__toolbar {
+  align-items: center;
+}
+
+.agent-review__refresh {
+  flex-shrink: 0;
+  padding: 9px 12px;
+  border: 1px solid #cbd9e5;
+  border-radius: 8px;
+  background: #fff;
+  color: #24577f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agent-review__refresh:hover:not(:disabled) {
+  background: #f3f6f9;
+}
+
+.agent-review__refresh:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.agent-review-item {
+  padding: 18px;
+}
+
+.agent-review-item .order-item__heading h3 {
+  line-height: 1.4;
+}
+
+.agent-review__income {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 9px;
+  background: #f6f9fc;
+}
+
+.agent-review__income h4 {
+  margin: 0 0 8px;
+  color: #24577f;
+  font-size: 14px;
+}
+
+.agent-review__income p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.agent-review__income ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agent-review__income li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #52677d;
+  font-size: 13px;
+}
+
+.agent-review__income li strong {
+  flex-shrink: 0;
+  color: #24577f;
+}
+
 .auth-card--register .auth-content {
   padding: 42px clamp(32px, 5.5vw, 68px);
 }
@@ -1035,6 +1135,24 @@ a {
 
   .dashboard-card .auth-content {
     padding-top: 28px;
+  }
+
+  .agent-dashboard-card .auth-content {
+    padding: 28px 24px 44px;
+  }
+
+  .agent-dashboard-content .orders-list__toolbar {
+    align-items: stretch;
+  }
+
+  .agent-review-item .order-item__heading {
+    flex-direction: column;
+  }
+
+  .agent-review__income li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .dashboard-stats {

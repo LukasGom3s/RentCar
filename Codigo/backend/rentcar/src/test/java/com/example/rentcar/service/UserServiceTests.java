@@ -47,6 +47,7 @@ class UserServiceTests {
         UsuarioRepository repository = mock(UsuarioRepository.class);
         Agente agent = new Agente();
         agent.setLogin("agente@example.com");
+        agent.setNome("Lucas Gomes");
         agent.setPalavraPasse("encoded");
         agent.setTipo(TipoAgente.BANCO);
         when(repository.findAgenteByLogin("agente@example.com")).thenReturn(Optional.of(agent));
@@ -60,6 +61,18 @@ class UserServiceTests {
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_AGENTE_BANCO")));
         assertFalse(user.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_CLIENTE")));
+    }
+
+    @Test
+    void findsAgentDisplayNameByLogin() {
+        UsuarioRepository repository = mock(UsuarioRepository.class);
+        Agente agent = new Agente();
+        agent.setLogin("agente@example.com");
+        agent.setNome("Lucas Gomes");
+        when(repository.findAgenteByLogin("agente@example.com")).thenReturn(Optional.of(agent));
+        UserService service = new UserService(repository, mock(PasswordEncoder.class));
+
+        assertEquals(Optional.of("Lucas Gomes"), service.findAgentNameByLogin("agente@example.com"));
     }
 
     @Test

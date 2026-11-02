@@ -38,6 +38,31 @@ public class PedidoService {
         return pedidoRepository.findByCliente_LoginOrderByDataCriacaoDesc(login);
     }
 
+    @Transactional(readOnly = true)
+    public List<Pedido> findPedidosAwaitingFinancialReview() {
+        return pedidoRepository.findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido.EM_ANALISE);
+    }
+
+    @Transactional
+    public Pedido evaluateFinancially(Long pedidoId, Boolean aprovado) {
+        if (aprovado == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe se o parecer foi aprovado.");
+        }
+
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pedido não encontrado."));
+        if (pedido.getStatus() != StatusPedido.EM_ANALISE) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Somente pedidos em análise podem receber um parecer.");
+        }
+
+        pedido.setStatus(aprovado ? StatusPedido.APROVADO : StatusPedido.REJEITADO);
+        return pedidoRepository.save(pedido);
+    }
+
     @Transactional
     public Pedido create(String login, Long automovelId, LocalDate dataInicio, LocalDate dataFim) {
         validatePeriod(automovelId, dataInicio, dataFim);

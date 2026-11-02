@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/automoveis").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/agente/**").hasRole("AGENTE")
                 .requestMatchers("/api/clientes/**", "/api/pedidos/**").hasRole("CLIENTE")
                 // Tudo o resto exige autenticação
                 .anyRequest().authenticated()
@@ -70,7 +71,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .toList());
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Content-Type",
                 "X-Recaptcha-Response"));

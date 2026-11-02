@@ -113,10 +113,14 @@ public class SecureLoginController {
     private SessionResponse sessionResponse(UserDetails user) {
         Map<String, String> accountType = new HashMap<>();
         addAccountType(accountType, user.getAuthorities());
+        String name = "AGENTE".equals(accountType.get("tipoUsuario"))
+                ? userService.findAgentNameByLogin(user.getUsername()).orElse(null)
+                : null;
         return new SessionResponse(
                 user.getUsername(),
                 accountType.get("tipoUsuario"),
-                accountType.get("tipoAgente"));
+                accountType.get("tipoAgente"),
+                name);
     }
 
     private void addAccountType(
@@ -139,7 +143,7 @@ public class SecureLoginController {
         }
     }
 
-    public record SessionResponse(String email, String tipoUsuario, String tipoAgente) {
+    public record SessionResponse(String email, String tipoUsuario, String tipoAgente, String nome) {
     }
 
     // =========================================================

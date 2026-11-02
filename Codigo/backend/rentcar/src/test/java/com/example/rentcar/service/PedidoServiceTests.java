@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
@@ -67,6 +68,89 @@ class PedidoServiceTests {
                 inicio,
                 inicio));
 
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void listsOnlyOrdersAwaitingFinancialReview() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        List<Pedido> expected = List.of(pendingPedido(StatusPedido.EM_ANALISE));
+        when(pedidoRepository.findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido.EM_ANALISE))
+                .thenReturn(expected);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        assertEquals(expected, service.findPedidosAwaitingFinancialReview());
+        verify(pedidoRepository).findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido.EM_ANALISE);
+    }
+
+    @Test
+    void approvesOrderAwaitingReview() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        Pedido pedido = pendingPedido(StatusPedido.EM_ANALISE);
+        when(pedidoRepository.findById(4L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        Pedido evaluated = service.evaluateFinancially(4L, true);
+
+        assertEquals(StatusPedido.APROVADO, evaluated.getStatus());
+        verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void rejectsOrderAwaitingReview() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        Pedido pedido = pendingPedido(StatusPedido.EM_ANALISE);
+        when(pedidoRepository.findById(4L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        Pedido evaluated = service.evaluateFinancially(4L, false);
+
+        assertEquals(StatusPedido.REJEITADO, evaluated.getStatus());
+        verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void doesNotAllowEvaluatingAnOrderOutsideAnalysis() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        when(pedidoRepository.findById(4L)).thenReturn(Optional.of(pendingPedido(StatusPedido.APROVADO)));
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.evaluateFinancially(4L, false));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void requiresAnExplicitFinancialOpinion() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.evaluateFinancially(4L, null));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        verify(pedidoRepository, never()).findById(4L);
         verify(pedidoRepository, never()).save(any(Pedido.class));
     }
 

@@ -53,3 +53,20 @@ export async function cancelOrder(id) {
   });
   return readResponse(response);
 }
+
+export async function getAgentOrdersAwaitingReview() {
+  const response = await fetch(`${API_URL}/api/agente/pedidos`, {
+    credentials: 'include',
+  });
+  return readResponse(response);
+}
+
+export async function submitFinancialOpinion(id, aprovado) {
+  const response = await fetch(`${API_URL}/api/agente/pedidos/${id}/parecer`, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ aprovado }),
+  });
+  return readResponse(response);
+}

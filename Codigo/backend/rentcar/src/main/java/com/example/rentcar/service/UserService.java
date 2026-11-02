@@ -3,6 +3,7 @@ package com.example.rentcar.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -141,6 +142,10 @@ public class UserService implements UserDetailsService {
 
     public List<Agente> getAgents() {
         return usuarioRepository.findAllAgents();
+    }
+
+    public Optional<String> findAgentNameByLogin(String email) {
+        return usuarioRepository.findAgenteByLogin(email).map(Agente::getNome);
     }
 
     public Agente getAgent(Long id) {
