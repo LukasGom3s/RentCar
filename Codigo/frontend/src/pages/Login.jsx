@@ -7,6 +7,7 @@ import { submitAuthRequest } from '../services/auth';
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', senha: '' });
   const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaRequired, setCaptchaRequired] = useState(true);
   const [captchaVersion, setCaptchaVersion] = useState(0);
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -15,6 +16,9 @@ export default function Login() {
 
   const handleCaptchaChange = useCallback((token) => {
     setCaptchaToken(token);
+  }, []);
+  const handleCaptchaRequiredChange = useCallback((required) => {
+    setCaptchaRequired(required);
   }, []);
 
   const handleChange = (event) => {
@@ -25,7 +29,7 @@ export default function Login() {
     event.preventDefault();
     setErro('');
 
-    if (!captchaToken) {
+    if (captchaRequired && !captchaToken) {
       setErro('Confirme o reCAPTCHA para continuar.');
       return;
     }
@@ -92,7 +96,11 @@ export default function Login() {
                 required
               />
               {erro && <p className="auth-error" role="alert">{erro}</p>}
-              <RecaptchaWidget key={captchaVersion} onChange={handleCaptchaChange} />
+              <RecaptchaWidget
+                key={captchaVersion}
+                onChange={handleCaptchaChange}
+                onRequiredChange={handleCaptchaRequiredChange}
+              />
               <button className="auth-submit" type="submit" disabled={enviando}>
                 {enviando ? 'Entrando...' : 'Entrar'}
               </button>

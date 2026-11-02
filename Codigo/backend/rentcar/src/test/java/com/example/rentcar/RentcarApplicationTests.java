@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
 		"app.admin.email=",
+		"recaptcha.enabled=true",
 		"app.admin.password=",
 		"app.admin.name="
 })
@@ -32,6 +33,13 @@ class RentcarApplicationTests {
 	void listsAutomoveisWithoutAuthentication() throws Exception {
 		mockMvc.perform(get("/api/automoveis"))
 				.andExpect(status().isOk());
+	}
+
+	@Test
+	void reportsRecaptchaConfigurationToTheFrontend() throws Exception {
+		mockMvc.perform(get("/api/auth/recaptcha-site-key"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.enabled").value(true));
 	}
 
 	@Test

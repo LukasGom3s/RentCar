@@ -65,8 +65,10 @@ public class SecureLoginController {
     // =========================================================
 
     @GetMapping("/recaptcha-site-key")
-    public Map<String, String> recaptchaSiteKey() {
-        return Map.of("siteKey", userConfig.getRecaptchaSiteKey());
+    public Map<String, Object> recaptchaSiteKey() {
+        return Map.of(
+                "enabled", userConfig.isRecaptchaEnabled(),
+                "siteKey", userConfig.isRecaptchaEnabled() ? userConfig.getRecaptchaSiteKey() : "");
     }
 
     @PostMapping("/login")

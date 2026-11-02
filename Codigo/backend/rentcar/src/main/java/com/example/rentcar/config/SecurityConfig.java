@@ -29,9 +29,11 @@ public class SecurityConfig {
 
     private final RecaptchaFilter recaptchaFilter;
 
-    public SecurityConfig(RecaptchaService recaptchaService) {
+    public SecurityConfig(
+            RecaptchaService recaptchaService,
+            @Value("${recaptcha.enabled:true}") boolean recaptchaEnabled) {
         // Inicializamos o filtro com o serviço
-        this.recaptchaFilter = new RecaptchaFilter(recaptchaService);
+        this.recaptchaFilter = new RecaptchaFilter(recaptchaService, recaptchaEnabled);
     }
 
     @Bean

@@ -16,6 +16,10 @@ export async function getRecaptchaSiteKey() {
   const response = await fetch(`${API_URL}/api/auth/recaptcha-site-key`);
   const data = await readResponse(response);
 
+  if (data.enabled === false) {
+    return null;
+  }
+
   if (!data.siteKey) {
     throw new Error('A chave do reCAPTCHA não foi configurada no servidor.');
   }

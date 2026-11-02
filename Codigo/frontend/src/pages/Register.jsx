@@ -19,6 +19,7 @@ export default function Register() {
   const [erro, setErro] = useState('');
   const [errosCampos, setErrosCampos] = useState({});
   const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaRequired, setCaptchaRequired] = useState(true);
   const [captchaVersion, setCaptchaVersion] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
@@ -27,6 +28,9 @@ export default function Register() {
 
   const handleCaptchaChange = useCallback((token) => {
     setCaptchaToken(token);
+  }, []);
+  const handleCaptchaRequiredChange = useCallback((required) => {
+    setCaptchaRequired(required);
   }, []);
 
   const handleChange = (e) => {
@@ -122,7 +126,7 @@ export default function Register() {
       return;
     }
 
-    if (!captchaToken) {
+    if (captchaRequired && !captchaToken) {
       setErro('Confirme o reCAPTCHA para continuar.');
       return;
     }
@@ -354,7 +358,11 @@ export default function Register() {
               )}
 
               {erro && <p className="auth-error" role="alert">{erro}</p>}
-              <RecaptchaWidget key={captchaVersion} onChange={handleCaptchaChange} />
+              <RecaptchaWidget
+                key={captchaVersion}
+                onChange={handleCaptchaChange}
+                onRequiredChange={handleCaptchaRequiredChange}
+              />
               <button type="submit" className="auth-submit" disabled={enviando}>
                 {enviando ? 'Cadastrando...' : 'Registrar'}
               </button>

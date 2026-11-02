@@ -41,9 +41,10 @@ function loadRecaptchaScript() {
   return recaptchaScriptPromise;
 }
 
-export default function RecaptchaWidget({ onChange }) {
+export default function RecaptchaWidget({ onChange, onRequiredChange }) {
   const containerRef = useRef(null);
   const [erro, setErro] = useState('');
+  const [recaptchaEnabled, setRecaptchaEnabled] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -51,15 +52,24 @@ export default function RecaptchaWidget({ onChange }) {
 
     async function renderWidget() {
       try {
-        const [siteKey, recaptcha] = await Promise.all([
-          getRecaptchaSiteKey(),
-          loadRecaptchaScript(),
-        ]);
+        const siteKey = await getRecaptchaSiteKey();
+        if (!active) {
+          return;
+        }
+        if (!siteKey) {
+          setRecaptchaEnabled(false);
+          onRequiredChange(false);
+          return;
+        }
+
+        const recaptcha = await loadRecaptchaScript();
 
         if (!active || !containerRef.current) {
           return;
         }
 
+        setRecaptchaEnabled(true);
+        onRequiredChange(true);
         widgetId = recaptcha.render(containerRef.current, {
           sitekey: siteKey,
           callback: (token) => onChange(token),
@@ -85,11 +95,13 @@ export default function RecaptchaWidget({ onChange }) {
         window.grecaptcha.reset(widgetId);
       }
     };
-  }, [onChange]);
+  }, [onChange, onRequiredChange]);
 
   return (
     <div className="auth-captcha">
-      <div ref={containerRef} />
+      {recaptchaEnabled === false
+        ? <p className="auth-captcha__disabled">reCAPTCHA desativado para este ambiente.</p>
+        : <div ref={containerRef} />}
       {erro && <p className="auth-error" role="alert">{erro}</p>}
     </div>
   );

@@ -11,9 +11,11 @@ import jakarta.servlet.http.HttpServletResponse;
 public class RecaptchaFilter extends OncePerRequestFilter {
 
     private final RecaptchaService recaptchaService;
+    private final boolean enabled;
 
-    public RecaptchaFilter(RecaptchaService recaptchaService) {
+    public RecaptchaFilter(RecaptchaService recaptchaService, boolean enabled) {
         this.recaptchaService = recaptchaService;
+        this.enabled = enabled;
     }
 
     @Override
@@ -21,7 +23,9 @@ public class RecaptchaFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         // Interceta pedidos POST para as rotas de autenticação/registo
-        if ((request.getRequestURI().equals("/api/auth/login") || request.getRequestURI().equals("/api/auth/register"))
+        if (enabled
+                && (request.getRequestURI().equals("/api/auth/login")
+                        || request.getRequestURI().equals("/api/auth/register"))
                 && request.getMethod().equalsIgnoreCase("POST")) {
 
             // No React, é comum enviar o token do captcha pelo Header da requisição
