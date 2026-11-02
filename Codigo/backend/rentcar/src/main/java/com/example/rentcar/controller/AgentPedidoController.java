@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,20 +34,59 @@ public class AgentPedidoController {
                 .toList();
     }
 
+    @GetMapping("/aprovados")
+    public List<ReviewPedidoResponse> findApprovedPedidos() {
+        return pedidoService.findApprovedPedidos().stream()
+                .map(ReviewPedidoResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/execucao")
+    public List<ReviewPedidoResponse> findPedidosAwaitingExecution() {
+        return pedidoService.findPedidosAwaitingExecution().stream()
+                .map(ReviewPedidoResponse::from)
+                .toList();
+    }
+
     @PatchMapping("/{pedidoId}/parecer")
     public ReviewResultResponse evaluate(
             @PathVariable Long pedidoId,
             @RequestBody FinancialOpinionRequest request) {
         Pedido pedido = pedidoService.evaluateFinancially(
                 pedidoId,
-                request == null ? null : request.aprovado());
-        return new ReviewResultResponse(pedido.getId(), pedido.getStatus());
+                request == null ? null : request.aprovado(),
+                request == null ? null : request.parecer());
+        return new ReviewResultResponse(pedido.getId(), pedido.getStatus(), pedido.getParecerFinanceiro());
     }
 
-    public record FinancialOpinionRequest(Boolean aprovado) {
+    @PutMapping("/{pedidoId}")
+    public ReviewPedidoResponse update(
+            @PathVariable Long pedidoId,
+            @RequestBody PedidoUpdateRequest request) {
+        Pedido pedido = pedidoService.updateByAgent(
+                pedidoId,
+                request.automovelId(),
+                request.dataInicio(),
+                request.dataFim());
+        return ReviewPedidoResponse.from(pedido);
     }
 
-    public record ReviewResultResponse(Long id, StatusPedido status) {
+    @PatchMapping("/{pedidoId}/execucao")
+    public ReviewResultResponse forwardForExecution(@PathVariable Long pedidoId) {
+        Pedido pedido = pedidoService.forwardForExecution(pedidoId);
+        return new ReviewResultResponse(pedido.getId(), pedido.getStatus(), pedido.getParecerFinanceiro());
+    }
+
+    public record PedidoUpdateRequest(
+            Long automovelId,
+            LocalDate dataInicio,
+            LocalDate dataFim) {
+    }
+
+    public record FinancialOpinionRequest(Boolean aprovado, String parecer) {
+    }
+
+    public record ReviewResultResponse(Long id, StatusPedido status, String parecerFinanceiro) {
     }
 
     public record ReviewPedidoResponse(
@@ -63,6 +103,7 @@ public class AgentPedidoController {
             LocalDate dataInicio,
             LocalDate dataFim,
             LocalDateTime dataCriacao,
+            String parecerFinanceiro,
             StatusPedido status) {
         static ReviewPedidoResponse from(Pedido pedido) {
             var cliente = pedido.getCliente();
@@ -85,6 +126,7 @@ public class AgentPedidoController {
                     pedido.getDataInicio(),
                     pedido.getDataFim(),
                     pedido.getDataCriacao(),
+                    pedido.getParecerFinanceiro(),
                     pedido.getStatus());
         }
     }

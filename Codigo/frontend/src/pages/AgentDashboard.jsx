@@ -3,8 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import logoRentCar from '../assets/LogoRentCar.png';
 import { getCurrentSession } from '../services/auth';
 import {
+  forwardOrderForExecution,
+  getAutomoveis,
+  getAgentApprovedOrders,
+  getAgentOrdersAwaitingExecution,
   getAgentOrdersAwaitingReview,
   submitFinancialOpinion,
+  updateAgentOrder,
 } from '../services/orders';
 
 const AGENT_TYPE_LABELS = {
@@ -12,9 +17,31 @@ const AGENT_TYPE_LABELS = {
   BANCO: 'Banco',
 };
 
+function localDateValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function nextDateValue(value) {
+  if (!value) {
+    return localDateValue();
+  }
+  const [year, month, day] = value.split('-').map(Number);
+  return localDateValue(new Date(year, month - 1, day + 1));
+}
+
 export default function AgentDashboard() {
   const [session, setSession] = useState(null);
   const [pedidos, setPedidos] = useState([]);
+  const [pedidosAprovados, setPedidosAprovados] = useState([]);
+  const [pedidosEncaminhados, setPedidosEncaminhados] = useState([]);
+  const [automoveis, setAutomoveis] = useState([]);
+  const [pedidoEditando, setPedidoEditando] = useState(null);
+  const [dadosEdicao, setDadosEdicao] = useState(null);
+  const [pedidoEmParecer, setPedidoEmParecer] = useState(null);
+  const [dadosParecer, setDadosParecer] = useState('');
   const [carregando, setCarregando] = useState(true);
   const [pedidoEmAcao, setPedidoEmAcao] = useState(null);
   const [error, setError] = useState('');
@@ -35,7 +62,18 @@ export default function AgentDashboard() {
           return;
         }
         setSession(currentSession);
-        setPedidos(await getAgentOrdersAwaitingReview());
+        const [agentOrders, cars, approvedOrders, executionOrders] = await Promise.all([
+          getAgentOrdersAwaitingReview(),
+          getAutomoveis(),
+          getAgentApprovedOrders(),
+          getAgentOrdersAwaitingExecution(),
+        ]);
+        if (active) {
+          setPedidos(agentOrders);
+          setAutomoveis(cars);
+          setPedidosAprovados(approvedOrders);
+          setPedidosEncaminhados(executionOrders);
+        }
       } catch (requestError) {
         if (!active) {
           return;
@@ -67,7 +105,14 @@ export default function AgentDashboard() {
     setError('');
     setMensagem('');
     try {
-      setPedidos(await getAgentOrdersAwaitingReview());
+      const [agentOrders, approvedOrders, executionOrders] = await Promise.all([
+        getAgentOrdersAwaitingReview(),
+        getAgentApprovedOrders(),
+        getAgentOrdersAwaitingExecution(),
+      ]);
+      setPedidos(agentOrders);
+      setPedidosAprovados(approvedOrders);
+      setPedidosEncaminhados(executionOrders);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -75,14 +120,103 @@ export default function AgentDashboard() {
     }
   };
 
-  const avaliarPedido = async (pedido, aprovado) => {
+  const abrirParecer = (pedido, aprovado) => {
+    setError('');
+    setMensagem('');
+    setPedidoEmParecer({ id: pedido.id, aprovado });
+    setDadosParecer('');
+  };
+
+  const cancelarParecer = () => {
+    setPedidoEmParecer(null);
+    setDadosParecer('');
+  };
+
+  const avaliarPedido = async (event, pedido) => {
+    event.preventDefault();
+    if (!pedidoEmParecer || !dadosParecer.trim()) {
+      setError('Descreva o parecer antes de registrar a decisão.');
+      return;
+    }
+
+    const { aprovado } = pedidoEmParecer;
     setPedidoEmAcao(pedido.id);
     setError('');
     setMensagem('');
     try {
-      await submitFinancialOpinion(pedido.id, aprovado);
+      const resultado = await submitFinancialOpinion(pedido.id, aprovado, dadosParecer);
       setPedidos((current) => current.filter((item) => item.id !== pedido.id));
+      if (aprovado) {
+        setPedidosAprovados((current) => [
+          { ...pedido, status: resultado.status, parecerFinanceiro: resultado.parecerFinanceiro },
+          ...current.filter((item) => item.id !== pedido.id),
+        ]);
+      }
+      setPedidoEditando(null);
+      setDadosEdicao(null);
+      cancelarParecer();
       setMensagem(`Parecer ${aprovado ? 'aprovado' : 'reprovado'} registrado para o pedido #${pedido.id}.`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setPedidoEmAcao(null);
+    }
+  };
+
+  const encaminharParaExecucao = async (pedido) => {
+    setPedidoEmAcao(pedido.id);
+    setError('');
+    setMensagem('');
+    try {
+      const result = await forwardOrderForExecution(pedido.id);
+      setPedidosAprovados((current) => current.filter((item) => item.id !== pedido.id));
+      setPedidosEncaminhados((current) => [
+        { ...pedido, status: result.status },
+        ...current.filter((item) => item.id !== pedido.id),
+      ]);
+      setMensagem(`Pedido #${pedido.id} encaminhado para consideração da execução do contrato.`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setPedidoEmAcao(null);
+    }
+  };
+
+  const iniciarEdicao = (pedido) => {
+    setError('');
+    setMensagem('');
+    setPedidoEditando(pedido.id);
+    setDadosEdicao({
+      automovelId: String(pedido.automovelId),
+      dataInicio: pedido.dataInicio,
+      dataFim: pedido.dataFim,
+    });
+  };
+
+  const handleChangeEdicao = (event) => {
+    setDadosEdicao((current) => ({ ...current, [event.target.name]: event.target.value }));
+  };
+
+  const cancelarEdicao = () => {
+    setPedidoEditando(null);
+    setDadosEdicao(null);
+  };
+
+  const salvarEdicao = async (event, pedidoId) => {
+    event.preventDefault();
+    setPedidoEmAcao(pedidoId);
+    setError('');
+    setMensagem('');
+    try {
+      const updatedOrder = await updateAgentOrder(pedidoId, {
+        ...dadosEdicao,
+        automovelId: Number(dadosEdicao.automovelId),
+      });
+      setPedidos((current) => current.map((pedido) => (
+        pedido.id === pedidoId ? updatedOrder : pedido
+      )));
+      cancelarEdicao();
+      setMensagem(`Pedido #${pedidoId} atualizado.`);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -164,24 +298,204 @@ export default function AgentDashboard() {
                     )}
                   </section>
 
-                  <div className="order-actions">
-                    <button
-                      className="auth-submit"
-                      type="button"
-                      onClick={() => avaliarPedido(pedido, true)}
-                      disabled={pedidoEmAcao !== null}
+                  {pedidoEditando === pedido.id && dadosEdicao ? (
+                    <form
+                      className="agent-review__edit-form"
+                      onSubmit={(event) => salvarEdicao(event, pedido.id)}
                     >
-                      {pedidoEmAcao === pedido.id ? 'Registrando...' : 'Aprovar parecer'}
-                    </button>
-                    <button
-                      className="auth-submit auth-submit--danger"
-                      type="button"
-                      onClick={() => avaliarPedido(pedido, false)}
-                      disabled={pedidoEmAcao !== null}
-                    >
-                      {pedidoEmAcao === pedido.id ? 'Registrando...' : 'Reprovar parecer'}
-                    </button>
+                      <label>
+                        Automóvel
+                        <select
+                          className="auth-input"
+                          name="automovelId"
+                          value={dadosEdicao.automovelId}
+                          onChange={handleChangeEdicao}
+                          required
+                        >
+                          {automoveis.map((automovel) => (
+                            <option key={automovel.id} value={automovel.id}>
+                              {automovel.marca} {automovel.modelo} ({automovel.ano}) · {automovel.placa}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="orders-form__dates">
+                        <label>
+                          Data inicial
+                          <input
+                            className="auth-input"
+                            type="date"
+                            name="dataInicio"
+                            value={dadosEdicao.dataInicio}
+                            onChange={handleChangeEdicao}
+                            min={localDateValue()}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Data final
+                          <input
+                            className="auth-input"
+                            type="date"
+                            name="dataFim"
+                            value={dadosEdicao.dataFim}
+                            onChange={handleChangeEdicao}
+                            min={nextDateValue(dadosEdicao.dataInicio)}
+                            required
+                          />
+                        </label>
+                      </div>
+                      <div className="order-actions">
+                        <button
+                          className="auth-submit"
+                          type="submit"
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          {pedidoEmAcao === pedido.id ? 'Salvando...' : 'Salvar alterações'}
+                        </button>
+                        <button
+                          className="auth-submit auth-submit--secondary"
+                          type="button"
+                          onClick={cancelarEdicao}
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          Voltar
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="order-actions agent-review__edit-action">
+                        <button
+                          className="auth-submit auth-submit--secondary"
+                          type="button"
+                          onClick={() => iniciarEdicao(pedido)}
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          Editar automóvel e período
+                        </button>
+                      </div>
+                      {pedidoEmParecer?.id === pedido.id ? (
+                        <form
+                          className="agent-review__opinion-form"
+                          onSubmit={(event) => avaliarPedido(event, pedido)}
+                        >
+                          <label htmlFor={`parecer-${pedido.id}`}>
+                            Parecer financeiro — {pedidoEmParecer.aprovado ? 'aprovação' : 'reprovação'}
+                          </label>
+                          <textarea
+                            id={`parecer-${pedido.id}`}
+                            className="auth-input"
+                            value={dadosParecer}
+                            onChange={(event) => setDadosParecer(event.target.value)}
+                            placeholder="Registre a justificativa da decisão com base nos dados financeiros."
+                            maxLength={2000}
+                            rows={4}
+                            required
+                          />
+                          <small>{dadosParecer.length}/2000 caracteres</small>
+                          <div className="order-actions">
+                            <button
+                              className={`auth-submit${pedidoEmParecer.aprovado ? '' : ' auth-submit--danger'}`}
+                              type="submit"
+                              disabled={pedidoEmAcao !== null || !dadosParecer.trim()}
+                            >
+                              {pedidoEmAcao === pedido.id ? 'Registrando...' : 'Registrar parecer'}
+                            </button>
+                            <button
+                              className="auth-submit auth-submit--secondary"
+                              type="button"
+                              onClick={cancelarParecer}
+                              disabled={pedidoEmAcao !== null}
+                            >
+                              Voltar
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                      <div className="order-actions">
+                        <button
+                          className="auth-submit"
+                          type="button"
+                          onClick={() => abrirParecer(pedido, true)}
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          Aprovar parecer
+                        </button>
+                        <button
+                          className="auth-submit auth-submit--danger"
+                          type="button"
+                          onClick={() => abrirParecer(pedido, false)}
+                          disabled={pedidoEmAcao !== null}
+                        >
+                          Reprovar parecer
+                        </button>
+                      </div>
+                      )}
+                    </>
+                  )}
+                </article>
+              ))}
+            </section>
+
+            <section className="orders-list" aria-labelledby="approved-orders-title">
+              <div className="orders-list__toolbar">
+                <h2 id="approved-orders-title" className="orders-list__title">Pareceres positivos</h2>
+              </div>
+              {!carregando && pedidosAprovados.length === 0 && (
+                <p className="orders-list__empty">Não há pedidos aprovados aguardando encaminhamento.</p>
+              )}
+              {pedidosAprovados.map((pedido) => (
+                <article className="order-item agent-review-item" key={pedido.id}>
+                  <div className="order-item__heading">
+                    <h3>Pedido #{pedido.id} · {pedido.clienteNome}</h3>
+                    <span className="order-status order-status--aprovado">Aprovado</span>
                   </div>
+                  <p>{pedido.marca} {pedido.modelo} ({pedido.ano}) · Placa {pedido.placa}</p>
+                  <p>Período: {formatDate(pedido.dataInicio)} – {formatDate(pedido.dataFim)}</p>
+                  {pedido.parecerFinanceiro && (
+                    <p className="agent-review__saved-opinion">
+                      <strong>Parecer:</strong> {pedido.parecerFinanceiro}
+                    </p>
+                  )}
+                  <button
+                    className="auth-submit agent-review__forward"
+                    type="button"
+                    onClick={() => encaminharParaExecucao(pedido)}
+                    disabled={pedidoEmAcao !== null}
+                  >
+                    {pedidoEmAcao === pedido.id
+                      ? 'Encaminhando...'
+                      : 'Colocar para consideração da execução'}
+                  </button>
+                </article>
+              ))}
+            </section>
+
+            <section className="orders-list" aria-labelledby="execution-orders-title">
+              <div className="orders-list__toolbar">
+                <h2 id="execution-orders-title" className="orders-list__title">
+                  Encaminhados para execução do contrato
+                </h2>
+              </div>
+              {!carregando && pedidosEncaminhados.length === 0 && (
+                <p className="orders-list__empty">Nenhum pedido foi encaminhado para execução.</p>
+              )}
+              {pedidosEncaminhados.map((pedido) => (
+                <article className="order-item agent-review-item" key={pedido.id}>
+                  <div className="order-item__heading">
+                    <h3>Pedido #{pedido.id} · {pedido.clienteNome}</h3>
+                    <span className="order-status order-status--aguardando_execucao">
+                      Aguardando execução do contrato
+                    </span>
+                  </div>
+                  <p>{pedido.marca} {pedido.modelo} ({pedido.ano}) · Placa {pedido.placa}</p>
+                  <p>Período: {formatDate(pedido.dataInicio)} – {formatDate(pedido.dataFim)}</p>
+                  {pedido.parecerFinanceiro && (
+                    <p className="agent-review__saved-opinion">
+                      <strong>Parecer:</strong> {pedido.parecerFinanceiro}
+                    </p>
+                  )}
                 </article>
               ))}
             </section>

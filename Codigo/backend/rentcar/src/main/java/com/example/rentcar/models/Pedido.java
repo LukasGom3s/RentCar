@@ -36,6 +36,9 @@ public class Pedido {
     @Column(nullable = false)
     private StatusPedido status;
 
+    @Column(length = 2000)
+    private String parecerFinanceiro;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
@@ -58,6 +61,9 @@ public class Pedido {
 
     public StatusPedido getStatus() { return status; }
     public void setStatus(StatusPedido status) { this.status = status; }
+
+    public String getParecerFinanceiro() { return parecerFinanceiro; }
+    public void setParecerFinanceiro(String parecerFinanceiro) { this.parecerFinanceiro = parecerFinanceiro; }
 
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }

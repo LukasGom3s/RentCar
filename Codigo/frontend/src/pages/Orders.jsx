@@ -31,6 +31,7 @@ const STATUS_LABELS = {
   PENDENTE: 'Pendente',
   EM_ANALISE: 'Em análise',
   APROVADO: 'Aprovado',
+  AGUARDANDO_EXECUCAO: 'Aguardando execução do contrato',
   REJEITADO: 'Rejeitado',
   CANCELADO: 'Cancelado',
 };
@@ -216,6 +217,11 @@ export default function Orders() {
                   </div>
                   <p>{pedido.ano} · Placa {pedido.placa}</p>
                   <p>{formatDate(pedido.dataInicio)} – {formatDate(pedido.dataFim)}</p>
+                  {pedido.parecerFinanceiro && (
+                    <p className="order-financial-opinion">
+                      <strong>Parecer do agente:</strong> {pedido.parecerFinanceiro}
+                    </p>
+                  )}
                   <small>Solicitado em {new Intl.DateTimeFormat('pt-BR').format(new Date(pedido.dataCriacao))}</small>
                   {pedidoEditando === pedido.id && dadosEdicao ? (
                     <form

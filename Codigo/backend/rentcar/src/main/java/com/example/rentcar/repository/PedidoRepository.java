@@ -16,6 +16,9 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     @EntityGraph(attributePaths = {"automovel", "cliente", "cliente.entidadesEmpregadoras"})
     List<Pedido> findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido status);
 
+    @EntityGraph(attributePaths = {"automovel", "cliente", "cliente.entidadesEmpregadoras"})
+    Optional<Pedido> findDistinctById(Long id);
+
     @EntityGraph(attributePaths = "automovel")
     Optional<Pedido> findByIdAndCliente_Login(Long id, String login);
 

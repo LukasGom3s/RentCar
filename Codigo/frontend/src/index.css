@@ -595,6 +595,16 @@ a {
   font-size: 12px;
 }
 
+.order-financial-opinion {
+  margin-top: 10px !important;
+  padding: 10px 12px;
+  border-left: 3px solid #24577f;
+  border-radius: 0 7px 7px 0;
+  background: #f3f7fb;
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere;
+}
+
 .order-actions,
 .order-edit-form {
   display: grid;
@@ -646,6 +656,11 @@ a {
 }
 
 .order-status--aprovado {
+  background: #e5f5ec;
+  color: #18764b;
+}
+
+.order-status--aguardando_execucao {
   background: #e5f5ec;
   color: #18764b;
 }
@@ -916,6 +931,77 @@ a {
 .agent-review__income li strong {
   flex-shrink: 0;
   color: #24577f;
+}
+
+.agent-review__edit-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e8edf2;
+}
+
+.agent-review__opinion-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e8edf2;
+}
+
+.agent-review__opinion-form label {
+  color: #52677d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agent-review__opinion-form textarea.auth-input {
+  min-height: 100px;
+  padding: 12px;
+  resize: vertical;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.agent-review__opinion-form small {
+  color: #718198;
+  font-size: 12px;
+  text-align: right;
+}
+
+.agent-review__saved-opinion {
+  padding: 10px 12px;
+  border-left: 3px solid #18764b;
+  background: #f2f8f4;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.agent-review__edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #52677d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agent-review__edit-form .auth-input {
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.agent-review__edit-action {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.agent-review__forward {
+  min-height: 44px;
+  margin-top: 12px;
+  font-size: 14px;
 }
 
 .auth-card--register .auth-content {

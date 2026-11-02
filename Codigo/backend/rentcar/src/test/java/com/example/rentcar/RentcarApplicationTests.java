@@ -116,6 +116,34 @@ class RentcarApplicationTests {
 	}
 
 	@Test
+	@WithMockUser(username = "agente@example.com", roles = "AGENTE")
+	void allowsAgentToAccessOrdersAwaitingReview() throws Exception {
+		mockMvc.perform(get("/api/agente/pedidos"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@WithMockUser(username = "cliente@example.com", roles = "CLIENTE")
+	void preventsClientFromAccessingAgentOrderQueue() throws Exception {
+		mockMvc.perform(get("/api/agente/pedidos"))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@WithMockUser(username = "agente@example.com", roles = "AGENTE")
+	void allowsAgentToReadApprovedOrdersForExecution() throws Exception {
+		mockMvc.perform(get("/api/agente/pedidos/aprovados"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@WithMockUser(username = "agente@example.com", roles = "AGENTE")
+	void allowsAgentToReadOrdersAlreadyForwardedForExecution() throws Exception {
+		mockMvc.perform(get("/api/agente/pedidos/execucao"))
+				.andExpect(status().isOk());
+	}
+
+	@Test
 	void reportsUnauthenticatedSession() throws Exception {
 		mockMvc.perform(get("/api/auth/session"))
 				.andExpect(status().isUnauthorized());

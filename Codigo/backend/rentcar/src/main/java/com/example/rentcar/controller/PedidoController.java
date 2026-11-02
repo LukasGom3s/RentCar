@@ -90,6 +90,7 @@ public class PedidoController {
             LocalDate dataInicio,
             LocalDate dataFim,
             LocalDateTime dataCriacao,
+            String parecerFinanceiro,
             StatusPedido status) {
         static PedidoResponse from(Pedido pedido) {
             var automovel = pedido.getAutomovel();
@@ -104,6 +105,7 @@ public class PedidoController {
                     pedido.getDataInicio(),
                     pedido.getDataFim(),
                     pedido.getDataCriacao(),
+                    pedido.getParecerFinanceiro(),
                     pedido.getStatus());
         }
     }

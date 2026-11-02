@@ -8,6 +8,7 @@ const STATUS_LABELS = {
   PENDENTE: 'Pendente',
   EM_ANALISE: 'Em análise',
   APROVADO: 'Aprovado',
+  AGUARDANDO_EXECUCAO: 'Aguardando execução do contrato',
   REJEITADO: 'Rejeitado',
   CANCELADO: 'Cancelado',
 };
@@ -147,6 +148,11 @@ export default function CustomerDashboard() {
                     </span>
                   </div>
                   <p>{formatDate(order.dataInicio)} – {formatDate(order.dataFim)}</p>
+                  {order.parecerFinanceiro && (
+                    <p className="order-financial-opinion">
+                      <strong>Parecer do agente:</strong> {order.parecerFinanceiro}
+                    </p>
+                  )}
                 </article>
               ))}
             </section>

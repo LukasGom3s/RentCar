@@ -43,10 +43,29 @@ public class PedidoService {
         return pedidoRepository.findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido.EM_ANALISE);
     }
 
+    @Transactional(readOnly = true)
+    public List<Pedido> findApprovedPedidos() {
+        return pedidoRepository.findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido.APROVADO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Pedido> findPedidosAwaitingExecution() {
+        return pedidoRepository.findDistinctByStatusOrderByDataCriacaoAsc(StatusPedido.AGUARDANDO_EXECUCAO);
+    }
+
     @Transactional
-    public Pedido evaluateFinancially(Long pedidoId, Boolean aprovado) {
+    public Pedido evaluateFinancially(Long pedidoId, Boolean aprovado, String parecer) {
         if (aprovado == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe se o parecer foi aprovado.");
+        }
+        if (parecer == null || parecer.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Descreva o parecer financeiro.");
+        }
+        String parecerNormalizado = parecer.trim();
+        if (parecerNormalizado.length() > 2000) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "O parecer financeiro deve ter no máximo 2000 caracteres.");
         }
 
         Pedido pedido = pedidoRepository.findById(pedidoId)
@@ -60,6 +79,51 @@ public class PedidoService {
         }
 
         pedido.setStatus(aprovado ? StatusPedido.APROVADO : StatusPedido.REJEITADO);
+        pedido.setParecerFinanceiro(parecerNormalizado);
+        return pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public Pedido forwardForExecution(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pedido não encontrado."));
+        if (pedido.getStatus() != StatusPedido.APROVADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Somente pedidos aprovados podem ser encaminhados para execução do contrato.");
+        }
+
+        pedido.setStatus(StatusPedido.AGUARDANDO_EXECUCAO);
+        return pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public Pedido updateByAgent(
+            Long pedidoId,
+            Long automovelId,
+            LocalDate dataInicio,
+            LocalDate dataFim) {
+        validatePeriod(automovelId, dataInicio, dataFim);
+
+        Pedido pedido = pedidoRepository.findDistinctById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pedido não encontrado."));
+        if (pedido.getStatus() != StatusPedido.EM_ANALISE) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Somente pedidos em análise podem ser alterados pelo agente.");
+        }
+
+        Automovel automovel = automovelRepository.findById(automovelId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Automóvel não encontrado."));
+        pedido.setAutomovel(automovel);
+        pedido.setDataInicio(dataInicio);
+        pedido.setDataFim(dataFim);
         return pedidoRepository.save(pedido);
     }
 

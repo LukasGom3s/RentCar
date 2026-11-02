@@ -97,9 +97,10 @@ class PedidoServiceTests {
                 mock(ClienteRepository.class),
                 mock(AutomovelRepository.class));
 
-        Pedido evaluated = service.evaluateFinancially(4L, true);
+        Pedido evaluated = service.evaluateFinancially(4L, true, "Rendimentos compatíveis.");
 
         assertEquals(StatusPedido.APROVADO, evaluated.getStatus());
+        assertEquals("Rendimentos compatíveis.", evaluated.getParecerFinanceiro());
         verify(pedidoRepository).save(pedido);
     }
 
@@ -114,10 +115,45 @@ class PedidoServiceTests {
                 mock(ClienteRepository.class),
                 mock(AutomovelRepository.class));
 
-        Pedido evaluated = service.evaluateFinancially(4L, false);
+        Pedido evaluated = service.evaluateFinancially(4L, false, "Rendimento insuficiente.");
 
         assertEquals(StatusPedido.REJEITADO, evaluated.getStatus());
+        assertEquals("Rendimento insuficiente.", evaluated.getParecerFinanceiro());
         verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void forwardsApprovedOrderForContractExecution() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        Pedido pedido = pendingPedido(StatusPedido.APROVADO);
+        when(pedidoRepository.findById(4L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        Pedido forwarded = service.forwardForExecution(4L);
+
+        assertEquals(StatusPedido.AGUARDANDO_EXECUCAO, forwarded.getStatus());
+        verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void cannotForwardOrderWithoutPositiveFinancialOpinion() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        when(pedidoRepository.findById(4L)).thenReturn(Optional.of(pendingPedido(StatusPedido.EM_ANALISE)));
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.forwardForExecution(4L));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        verify(pedidoRepository, never()).save(any(Pedido.class));
     }
 
     @Test
@@ -131,7 +167,7 @@ class PedidoServiceTests {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.evaluateFinancially(4L, false));
+                () -> service.evaluateFinancially(4L, false, "Pedido aprovado anteriormente."));
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
         verify(pedidoRepository, never()).save(any(Pedido.class));
@@ -147,10 +183,107 @@ class PedidoServiceTests {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.evaluateFinancially(4L, null));
+                () -> service.evaluateFinancially(4L, null, "Parecer inválido."));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         verify(pedidoRepository, never()).findById(4L);
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void requiresNonBlankFinancialOpinion() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.evaluateFinancially(4L, true, "  "));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        verify(pedidoRepository, never()).findById(4L);
+    }
+
+    @Test
+    void rejectsFinancialOpinionLongerThanTwoThousandCharacters() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.evaluateFinancially(4L, true, "a".repeat(2001)));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        verify(pedidoRepository, never()).findById(4L);
+    }
+
+    @Test
+    void agentCanChangeCarAndPeriodWhileOrderIsUnderAnalysis() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        AutomovelRepository automovelRepository = mock(AutomovelRepository.class);
+        Pedido pedido = pendingPedido(StatusPedido.EM_ANALISE);
+        Automovel replacement = new Automovel();
+        replacement.setId(9L);
+        when(pedidoRepository.findDistinctById(4L)).thenReturn(Optional.of(pedido));
+        when(automovelRepository.findById(9L)).thenReturn(Optional.of(replacement));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                automovelRepository);
+        LocalDate inicio = LocalDate.now().plusDays(5);
+
+        Pedido updated = service.updateByAgent(4L, 9L, inicio, inicio.plusDays(2));
+
+        assertEquals(replacement, updated.getAutomovel());
+        assertEquals(inicio, updated.getDataInicio());
+        assertEquals(inicio.plusDays(2), updated.getDataFim());
+        assertEquals(StatusPedido.EM_ANALISE, updated.getStatus());
+        verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void agentCannotChangeOrderOutsideAnalysis() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        when(pedidoRepository.findDistinctById(4L))
+                .thenReturn(Optional.of(pendingPedido(StatusPedido.APROVADO)));
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                mock(AutomovelRepository.class));
+        LocalDate inicio = LocalDate.now().plusDays(5);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.updateByAgent(4L, 9L, inicio, inicio.plusDays(2)));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
+
+    @Test
+    void agentCannotChangeOrderToAnUnregisteredCar() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        AutomovelRepository automovelRepository = mock(AutomovelRepository.class);
+        when(pedidoRepository.findDistinctById(4L))
+                .thenReturn(Optional.of(pendingPedido(StatusPedido.EM_ANALISE)));
+        when(automovelRepository.findById(9L)).thenReturn(Optional.empty());
+        PedidoService service = new PedidoService(
+                pedidoRepository,
+                mock(ClienteRepository.class),
+                automovelRepository);
+        LocalDate inicio = LocalDate.now().plusDays(5);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> service.updateByAgent(4L, 9L, inicio, inicio.plusDays(2)));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         verify(pedidoRepository, never()).save(any(Pedido.class));
     }
 
