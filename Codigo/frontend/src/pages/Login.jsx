@@ -32,8 +32,11 @@ export default function Login() {
 
     setEnviando(true);
     try {
-      await submitAuthRequest('login', formData, captchaToken);
-      navigate('/dashboard', { replace: true });
+      const session = await submitAuthRequest('login', formData, captchaToken);
+      if (session.tipoUsuario !== 'AGENTE' && session.tipoUsuario !== 'CLIENTE') {
+        throw new Error('Não foi possível identificar o tipo da conta. Entre em contato com o suporte.');
+      }
+      navigate(session.tipoUsuario === 'AGENTE' ? '/agente' : '/dashboard', { replace: true });
     } catch (error) {
       setErro(error.message);
       setCaptchaToken('');

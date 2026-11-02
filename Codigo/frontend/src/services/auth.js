@@ -4,7 +4,9 @@ async function readResponse(response) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.erro || 'Não foi possível concluir a operação.');
+    const error = new Error(data.erro || data.message || 'Não foi possível concluir a operação.');
+    error.status = response.status;
+    throw error;
   }
 
   return data;
@@ -37,5 +39,12 @@ export async function submitAuthRequest(endpoint, payload, captchaToken) {
     body: JSON.stringify(payload),
   });
 
+  return readResponse(response);
+}
+
+export async function getCurrentSession() {
+  const response = await fetch(`${API_URL}/api/auth/session`, {
+    credentials: 'include',
+  });
   return readResponse(response);
 }

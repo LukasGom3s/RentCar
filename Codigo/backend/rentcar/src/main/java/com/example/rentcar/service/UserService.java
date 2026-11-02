@@ -1,10 +1,13 @@
 package com.example.rentcar.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
+import com.example.rentcar.models.Agente;
 import com.example.rentcar.models.Cliente;
 import com.example.rentcar.models.EntidadeEmpregadora;
+import com.example.rentcar.models.TipoAgente;
 import com.example.rentcar.models.Usuario;
 import com.example.rentcar.repository.UsuarioRepository;
 import org.springframework.security.core.userdetails.User;
@@ -31,10 +34,24 @@ public class UserService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByLogin(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
 
+        List<String> roles = new ArrayList<>(List.of("USER"));
+        if (usuario instanceof Cliente) {
+            roles.add("CLIENTE");
+        } else if (usuario instanceof Agente agente) {
+            roles.add("AGENTE");
+            if (agente.getTipo() == TipoAgente.EMPRESA) {
+                roles.add("AGENTE_EMPRESA");
+            } else if (agente.getTipo() == TipoAgente.BANCO) {
+                roles.add("AGENTE_BANCO");
+            }
+        } else {
+            throw new UsernameNotFoundException("Tipo de usuário não suportado.");
+        }
+
         return User.builder()
                 .username(usuario.getLogin())
                 .password(usuario.getPalavraPasse())
-                .roles("USER") // O ideal futuramente é separar ROLE_CLIENTE e ROLE_AGENTE
+                .roles(roles.toArray(String[]::new))
                 .build();
     }
 

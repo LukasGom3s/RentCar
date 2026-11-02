@@ -5,7 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -87,6 +90,7 @@ public class SecureLoginController {
             Map<String, String> responseBody = new HashMap<>();
             responseBody.put("mensagem", "Login efetuado com sucesso!");
             responseBody.put("usuario", auth.getName());
+            addAccountType(responseBody, auth.getAuthorities());
 
             return ResponseEntity.ok().body(responseBody);
 
@@ -95,6 +99,45 @@ public class SecureLoginController {
             error.put("erro", "Credenciais inválidas");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
+    }
+
+    @GetMapping("/session")
+    public ResponseEntity<SessionResponse> currentSession(
+            @AuthenticationPrincipal UserDetails user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(sessionResponse(user));
+    }
+
+    private SessionResponse sessionResponse(UserDetails user) {
+        Map<String, String> accountType = new HashMap<>();
+        addAccountType(accountType, user.getAuthorities());
+        return new SessionResponse(
+                user.getUsername(),
+                accountType.get("tipoUsuario"),
+                accountType.get("tipoAgente"));
+    }
+
+    private void addAccountType(
+            Map<String, String> response,
+            java.util.Collection<? extends GrantedAuthority> authorities) {
+        List<String> roles = authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        if (roles.contains("ROLE_AGENTE")) {
+            response.put("tipoUsuario", "AGENTE");
+            if (roles.contains("ROLE_AGENTE_EMPRESA")) {
+                response.put("tipoAgente", "EMPRESA");
+            } else if (roles.contains("ROLE_AGENTE_BANCO")) {
+                response.put("tipoAgente", "BANCO");
+            }
+        } else if (roles.contains("ROLE_CLIENTE")) {
+            response.put("tipoUsuario", "CLIENTE");
+        }
+    }
+
+    public record SessionResponse(String email, String tipoUsuario, String tipoAgente) {
     }
 
     // =========================================================

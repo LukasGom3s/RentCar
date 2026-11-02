@@ -1,7 +1,9 @@
 package com.example.rentcar.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -15,10 +17,49 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.rentcar.models.Cliente;
+import com.example.rentcar.models.Agente;
 import com.example.rentcar.models.EntidadeEmpregadora;
+import com.example.rentcar.models.TipoAgente;
 import com.example.rentcar.repository.UsuarioRepository;
 
 class UserServiceTests {
+
+    @Test
+    void assignsClientRoleToClientAccounts() {
+        UsuarioRepository repository = mock(UsuarioRepository.class);
+        Cliente client = new Cliente();
+        client.setLogin("cliente@example.com");
+        client.setPalavraPasse("encoded");
+        when(repository.findByLogin("cliente@example.com")).thenReturn(Optional.of(client));
+        UserService service = new UserService(repository, mock(PasswordEncoder.class));
+
+        var user = service.loadUserByUsername("cliente@example.com");
+
+        assertTrue(user.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_CLIENTE")));
+        assertFalse(user.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_AGENTE")));
+    }
+
+    @Test
+    void assignsAgentAndBankRolesToAgentAccounts() {
+        UsuarioRepository repository = mock(UsuarioRepository.class);
+        Agente agent = new Agente();
+        agent.setLogin("agente@example.com");
+        agent.setPalavraPasse("encoded");
+        agent.setTipo(TipoAgente.BANCO);
+        when(repository.findByLogin("agente@example.com")).thenReturn(Optional.of(agent));
+        UserService service = new UserService(repository, mock(PasswordEncoder.class));
+
+        var user = service.loadUserByUsername("agente@example.com");
+
+        assertTrue(user.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_AGENTE")));
+        assertTrue(user.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_AGENTE_BANCO")));
+        assertFalse(user.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_CLIENTE")));
+    }
 
     @Test
     void registersEmployerIncomeWithTheClient() {
